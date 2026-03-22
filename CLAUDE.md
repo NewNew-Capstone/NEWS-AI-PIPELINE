@@ -84,6 +84,7 @@ NEWS-AI-PIPELINE/
 ├── scripts/
 ├── api/
 ├── db/
+│   └── schemas/
 ├── analysis_bc/
 ├── content_bc/
 ├── issue_comparison_bc/
@@ -181,3 +182,74 @@ ruff check .
 - `@content_bc/CLAUDE.md`
 - `@issue_comparison_bc/CLAUDE.md`
 - `@personalization_bc/CLAUDE.md`
+
+---
+
+## 13) Plan Mode / Accept Mode 기준
+
+### Plan Mode 필수 작업
+- 여러 파일 동시 수정
+- 새 모듈/BC 구조 생성
+- DB/Event 스키마 변경
+- LLM 호출 로직 추가
+- 아키텍처 변경
+
+### Accept Mode 직행 가능 작업
+- 주석/문자열 수정
+- type hint 보강
+- 테스트 1개 추가
+- 단순 리팩토링 (로직 변경 없음)
+
+---
+
+## 14) Hooks 사용 기준
+반복 검증은 Hook으로 자동화한다.
+
+권장 Hook:
+- Write 후 → `bash scripts/lint.sh`
+- 테스트 파일 변경 후 → `pytest` 자동 실행
+
+설정 위치: `.claude/settings.json`
+
+예시:
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [{ "type": "command", "command": "bash scripts/lint.sh" }]
+      }
+    ]
+  }
+}
+```
+
+> scripts/가 완성된 후 별도 세션에서 팀 합의 후 적용한다.
+
+---
+
+## 15) Skills 사용 기준
+반복 작업은 `.claude/skills/`에 등록한다.
+
+팀 공용 Skills 후보:
+- `bc-scaffold` : 새 BC 폴더+파일 일괄 생성
+- `event-schema` : Event 스키마 템플릿 생성
+- `pr-checklist` : PR 전 체크리스트 출력
+
+개인용은 `~/.claude/skills/`, 팀 공용은 `.claude/skills/`에 저장한다.
+
+---
+
+## 16) Sub-Agent 사용 기준
+
+### 써도 되는 경우
+- 독립적인 테스트 작성
+- 대량 로그 분석
+- 문서 업데이트
+- 코드 리뷰
+
+### 쓰지 말아야 하는 경우
+- BC 경계를 넘는 수정
+- 인터페이스가 아직 합의되지 않은 작업
+- 메인 세션과 지속 추론을 주고받아야 하는 디버깅
