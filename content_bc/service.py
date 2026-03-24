@@ -1,0 +1,19 @@
+from content_bc.modules.transcript_loader import load_transcript
+from content_bc.schemas import TranscriptResponseDto
+
+
+class ContentService:
+    def get_transcript(self, video_id: str, region_code: str = "US") -> TranscriptResponseDto:
+        try:
+            text = load_transcript(video_id, region_code)
+            return TranscriptResponseDto(
+                video_id=video_id,
+                transcript=text,
+                transcript_status="success",
+            )
+        except Exception:
+            return TranscriptResponseDto(
+                video_id=video_id,
+                transcript="",
+                transcript_status="failed",
+            )
