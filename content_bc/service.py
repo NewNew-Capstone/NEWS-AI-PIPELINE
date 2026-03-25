@@ -1,6 +1,6 @@
+# transcript_loader 호출하고, 성공/실패 처리해서 응답 DTO로 만들어줌. 
 from content_bc.modules.transcript_loader import load_transcript
 from content_bc.schemas import TranscriptResponseDto
-
 
 class ContentService:
     def get_transcript(self, video_id: str, region_code: str = "US") -> TranscriptResponseDto:

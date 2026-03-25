@@ -1,3 +1,5 @@
+# 실제 유튜브 자막 가져오는 함수 
+# region 코드에 따라 언어 선택 
 from youtube_transcript_api import YouTubeTranscriptApi
 
 LANG_MAP = {

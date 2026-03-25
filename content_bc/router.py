@@ -1,3 +1,5 @@
+# GET /content/transcript?video_id=xxx&region_code=KR 엔드포인트 정의. 
+# Spring이 여기로 HTTP 요청 보내면 됨.
 from fastapi import APIRouter
 
 from content_bc.schemas import TranscriptResponseDto
