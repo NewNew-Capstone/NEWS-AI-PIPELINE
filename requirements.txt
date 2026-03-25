@@ -13,6 +13,7 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 uvicorn==0.42.0
 sqlalchemy>=2.0
+youtube-transcript-api>=0.6.3
 langdetect
 kiwipiepy
 sentence-transformers

@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
+from content_bc.router import router as content_router
+
 load_dotenv()
 
 app = FastAPI(
@@ -8,6 +10,9 @@ app = FastAPI(
     description="AI pipeline for news bias analysis",
     version="0.1.0"
 )
+
+app.include_router(content_router)
+
 
 @app.get("/")
 def root():
