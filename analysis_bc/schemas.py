@@ -19,6 +19,7 @@ class AnalyzeRequestDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     target_id: int
+    title: str
     target_type: TargetType
     transcript_id: int
     country: str
@@ -27,6 +28,17 @@ class AnalyzeRequestDto(BaseModel):
 
 
 # 출력
+
+class SpanLabelDto(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
+    content_sentence_id: int
+    start_offset: int
+    end_offset: int
+    label_type: SentenceLabelType
+    score: float
+    matched_word: str | None = None
+
 
 class SentenceBiasLabelDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
@@ -71,5 +83,5 @@ class BiasAnalysisResultDto(BaseModel):
     evidence_summary: str
     tone_label: str
     keywords: list[BiasAnalysisKeywordDto]
-    sentence_labels: list[SentenceBiasLabelDto]
+    sentence_labels: list[SpanLabelDto]
     evidences: list[BiasEvidenceDto]
