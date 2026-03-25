@@ -13,3 +13,8 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 uvicorn==0.42.0
 sqlalchemy>=2.0
+langdetect
+kiwipiepy
+sentence-transformers
+qdrant-client
+redis
