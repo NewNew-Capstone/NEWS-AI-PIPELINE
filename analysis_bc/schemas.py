@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from analysis_bc.enums import BiasKeywordType, EvidenceType, SentenceLabelType, TargetType
 
@@ -82,6 +82,9 @@ class BiasAnalysisResultDto(BaseModel):
     perspective_summary: str
     evidence_summary: str
     tone_label: str
+    subjectivity_score: float = 0.0
+    score_evidence: str = ""
+    bias_type_scores: dict[str, float] = Field(default_factory=dict)
     keywords: list[BiasAnalysisKeywordDto]
     sentence_labels: list[SpanLabelDto]
     evidences: list[BiasEvidenceDto]
