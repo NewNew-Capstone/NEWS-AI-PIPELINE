@@ -20,13 +20,12 @@ class AnalyzeRequestDto(BaseModel):
 
     target_id: int
     title: str
-    target_type: TargetType
-    transcript_id: int
-    country: str
+    ## optional로 변경 
+    target_type: TargetType | None = None    
+    transcript_id: int | None = None         
+    country: str | None = None                
     language: str
     sentences: list[SentenceInputDto]
-
-
 # 출력
 
 class SpanLabelDto(BaseModel):

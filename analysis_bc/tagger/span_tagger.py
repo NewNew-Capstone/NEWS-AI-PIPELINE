@@ -76,12 +76,13 @@ class SpanTagger:
                 candidate = sentence.sentence_text[span_start:span_end]
 
                 embedding = self.model.encode(candidate).tolist()
-                hits = self.qdrant.search(
+                _result = self.qdrant.query_points(
                     collection_name=QDRANT_ANONYMOUS_COLLECTION,
-                    query_vector=embedding,
+                    query=embedding,
                     limit=1,
                     score_threshold=ANONYMOUS_SIMILARITY_THRESHOLD,
                 )
+                hits = _result.points
                 if hits and (best is None or hits[0].score > best[0]):
                     best = (hits[0].score, span_start, span_end, hits[0].payload or {})
 
@@ -121,12 +122,13 @@ class SpanTagger:
             if len(token.form) < 2:
                 continue
             embedding = self.model.encode(token.form).tolist()
-            hits = self.qdrant.search(
+            _result = self.qdrant.query_points(
                 collection_name=QDRANT_EMOTION_COLLECTION,
-                query_vector=embedding,
+                query=embedding,
                 limit=1,
                 score_threshold=EMOTION_SIMILARITY_THRESHOLD,
             )
+            hits = _result.points
             if not hits:
                 continue
             payload = hits[0].payload or {}

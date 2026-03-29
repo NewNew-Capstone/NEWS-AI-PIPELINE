@@ -31,12 +31,13 @@ class EmotionalTagger:
             tokens = self.kiwi.tokenize(sentence.sentence_text)
             for token in tokens:
                 embedding = self.model.encode(token.form).tolist()
-                hits = self.qdrant.search(
+                _result = self.qdrant.query_points(
                     collection_name=QDRANT_EMOTION_COLLECTION,
-                    query_vector=embedding,
+                    query=embedding,
                     limit=1,
                     score_threshold=EMOTION_SIMILARITY_THRESHOLD,
                 )
+                hits = _result.points
                 if hits:
                     results.append(
                         SpanLabelDto(
