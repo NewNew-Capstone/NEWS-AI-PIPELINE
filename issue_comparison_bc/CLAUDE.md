@@ -30,7 +30,7 @@
 2. 가중치 실험 전에 **표준값을 고정** 한다.
 3. 대표 점수 계산은 재현 가능해야 한다.
 4. 국가 fallback 정책은 코드/문서 둘 다 명시한다.
-5. `service.py` 는 수집 → 클러스터링 → 대표 선정 → 응답 조립만 담당한다.
+5. `service.py` 는 현재 `cluster-similarity` 계산 서비스(임베딩+유사도)를 담당하고, 향후 확장 시 orchestration 중심 구조를 유지한다.
 
 ---
 
@@ -51,11 +51,16 @@ issue_comparison_bc/
 ```
 
 ### 파일 역할
+- `router.py`: `POST /issue/cluster-similarity` 엔드포인트 노출
+- `service.py`: 모델 싱글톤 관리 + title/summary 코사인 유사도 계산
+- `schemas.py`: cluster-similarity 요청/응답 DTO 정의
 - `clusterer.py`: 이슈 묶기 / 유사도 기준 적용
 - `representative_selector.py`: 대표 항목 점수 계산 / 선택
 - `comparison_builder.py`: 최종 비교 응답 DTO 조립
 - `cache_key.py`: 캐시 키 생성 규칙
 - `event_builder.py`: 필요 시 다음 단계 event payload 생성
+
+> `clusterer.py` 중심 구조는 향후 분리 목표이며, 현재 구현 범위는 `router.py` + `service.py` + `schemas.py` 기준으로 운영한다.
 
 ---
 
@@ -122,3 +127,46 @@ issue_comparison_bc/
 먼저 입력 스키마, 점수 공식, 테스트 fixture, 완료 기준을 Plan Mode로 보여줘.
 service.py는 orchestration만 유지해줘.
 ```
+
+---
+
+## 11) cluster-similarity API 인계 사항 (A담당 → 다음 담당)
+
+현재 이 BC는 별도 외부 임베딩 BC 없이, `issue_comparison_bc/service.py` 내부에서
+임베딩 모델 싱글톤을 직접 관리한다.
+
+### POST /issue/cluster-similarity
+
+**요청**
+```json
+{
+  "title_a": "문장",
+  "title_b": "문장",
+  "summary_a": "문장",
+  "summary_b": "문장"
+}
+```
+
+**응답**
+```json
+{
+  "title_similarity": 0.87,
+  "summary_similarity": 0.76
+}
+```
+
+### 구현 기준
+- 모델: `jhgan/ko-sroberta-multitask`
+- 벡터 차원: **768**
+- `service.py` 모듈 전역 싱글톤(`_MODEL`, `_get_model`) 사용
+- 코사인 유사도 계산: `numpy`
+- Qdrant 미사용
+
+### 인계 주의사항
+- 모델을 요청마다 재로딩하지 않는다.
+- BC 간 직접 import 금지 원칙은 계속 유지한다.
+- 확장 작업(임계값, 후처리, 테스트)은 `issue_comparison_bc` 내부에서 진행한다.
+
+### 현재 상태
+- 기존 임베딩 BC 폴더는 제거됨(현재 저장소 기준 미존재)
+- `main.py`는 `issue_comparison` 라우터 등록 상태

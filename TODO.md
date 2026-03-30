@@ -13,6 +13,7 @@
 - [ ] `summarizer.py` 구현 (별도 세션)
 - [ ] `scorer.py` 구현
 - [x] 통합 테스트 작성
+- [x] `embed_bc` 구현 — POST /embed (싱글톤 모델, 배치 처리, main.py 등록)
 
 ## B 담당 (content_bc)
 - [ ] `collector.py` (YouTube API 클라이언트)
