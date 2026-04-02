@@ -32,11 +32,16 @@ class AnalysisService:
     def analyze(self, request: AnalyzeRequestDto) -> BiasAnalysisResultDto:
         # 전처리
         sentences = self.prepare_sentences(request.sentences, request.language)
+        print(f"[서비스] 전처리 후 문장 수: {len(sentences)} / 입력: {len(request.sentences)}")
+        if not sentences:
+            print("[서비스] ⚠ 전처리 후 문장이 0개 — 언어 감지 필터에서 모두 제거됨")
 
         # classifier 호출 → fact / opinion 분리
         classified = self.classifier.classify(sentences)
         fact_sentences = [s for s in classified if s.label == "fact_like"]
         opinion_sentences = [s for s in classified if s.label == "opinion_like"]
+
+        print(f"[서비스] 분류 결과 — fact: {len(fact_sentences)}, opinion: {len(opinion_sentences)}")
 
         logger.debug(
             "classify: fact=%d, opinion=%d",

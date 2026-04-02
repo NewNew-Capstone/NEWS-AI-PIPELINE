@@ -20,12 +20,24 @@ class AnalyzeRequestDto(BaseModel):
 
     target_id: int
     title: str
-    ## optional로 변경 
-    target_type: TargetType | None = None    
-    transcript_id: int | None = None         
-    country: str | None = None                
+    ## optional로 변경
+    target_type: TargetType | None = None
+    transcript_id: int | None = None
+    country: str | None = None
     language: str
     sentences: list[SentenceInputDto]
+
+
+class AnalyzeRawTextRequestDto(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
+    target_id: int
+    title: str
+    language: str
+    raw_text: str
+    target_type: TargetType | None = None
+    transcript_id: int | None = None
+    country: str | None = None
 # 출력
 
 class SpanLabelDto(BaseModel):
@@ -67,6 +79,12 @@ class BiasEvidenceDto(BaseModel):
     confidence_score: float
 
 
+class SentenceResultDto(BaseModel):
+    content_sentence_id: int
+    sentence_text: str
+    sentence_order: int
+
+
 class BiasAnalysisResultDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
@@ -87,3 +105,7 @@ class BiasAnalysisResultDto(BaseModel):
     keywords: list[BiasAnalysisKeywordDto]
     sentence_labels: list[SpanLabelDto]
     evidences: list[BiasEvidenceDto]
+
+
+class RawAnalysisResultDto(BiasAnalysisResultDto):
+    sentences: list[SentenceResultDto]
