@@ -4,6 +4,7 @@ import logging
 
 from kiwipiepy import Kiwi
 from qdrant_client import QdrantClient
+from qdrant_client.models import QueryRequest
 from sentence_transformers import SentenceTransformer
 
 from analysis_bc.classifier import ClassifiedSentenceDto
@@ -42,15 +43,39 @@ class SpanTagger:
     def __init__(self) -> None:
         self.kiwi = Kiwi()
         self.model = SentenceTransformer("jhgan/ko-sroberta-multitask")
-        self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=3.0)
+
+    def _is_qdrant_healthy(self) -> bool:
+        try:
+            self.qdrant.get_collections()
+            print("[SpanTagger] Qdrant health check passed")
+            return True
+        except Exception:
+            print("[SpanTagger] Qdrant health check failed — skipping SpanTagger")
+            logger.warning("Qdrant health check failed, skipping SpanTagger")
+            return False
 
     def tag(self, sentences: list[ClassifiedSentenceDto]) -> list[SpanLabelDto]:
+        print(f"[SpanTagger] tag() 시작 — opinion 문장 수: {len(sentences)}")
+        if not self._is_qdrant_healthy():
+            return []
         results: list[SpanLabelDto] = []
-        for sentence in sentences:
+        for i, sentence in enumerate(sentences):
             tokens = self.kiwi.tokenize(sentence.sentence_text)
             anon_span = self._search_anonymous(sentence, tokens)
             emotion_spans = self._search_emotion(sentence, tokens)
-            results.extend(self._merge(anon_span, emotion_spans))
+            merged = self._merge(anon_span, emotion_spans)
+
+            if anon_span or emotion_spans:
+                anon_info = f"ANONYMOUS(\"{anon_span.matched_word}\" {anon_span.score:.2f})" if anon_span else "ANONYMOUS 없음"
+                emotion_info = ", ".join(
+                    f"EMOTION(\"{s.matched_word}\" {s.score:.2f})" for s in emotion_spans
+                ) if emotion_spans else "EMOTION 없음"
+                preview = sentence.sentence_text[:30].replace("\n", " ")
+                print(f"[SpanTagger] 문장 {i + 1}/{len(sentences)} id={sentence.content_sentence_id} \"{preview}...\" → {anon_info} / {emotion_info}")
+
+            results.extend(merged)
+        print(f"[SpanTagger] tag() 완료 — 총 라벨 수: {len(results)}")
         return results
 
     # ------------------------------------------------------------------
@@ -68,23 +93,40 @@ class SpanTagger:
         """
         best: tuple[float, int, int, dict] | None = None  # (score, start, end, payload)
 
+        # 후보 텍스트와 offset을 먼저 수집
+        candidates: list[tuple[str, int, int]] = []  # (text, span_start, span_end)
         for window_size in _ANON_WINDOW_SIZES:
             for i in range(len(tokens) - window_size + 1):
                 window = tokens[i : i + window_size]
                 span_start = window[0].start
                 span_end = window[-1].start + window[-1].len
                 candidate = sentence.sentence_text[span_start:span_end]
+                candidates.append((candidate, span_start, span_end))
 
-                embedding = self.model.encode(candidate).tolist()
-                _result = self.qdrant.query_points(
-                    collection_name=QDRANT_ANONYMOUS_COLLECTION,
-                    query=embedding,
+        if not candidates:
+            return None
+
+        # 배치 encode (1회 호출)
+        texts = [c[0] for c in candidates]
+        embeddings = self.model.encode(texts)
+
+        # 배치 쿼리 (1회 HTTP 요청)
+        batch_results = self.qdrant.query_batch_points(
+            collection_name=QDRANT_ANONYMOUS_COLLECTION,
+            requests=[
+                QueryRequest(
+                    query=embedding.tolist(),
                     limit=1,
                     score_threshold=ANONYMOUS_SIMILARITY_THRESHOLD,
                 )
-                hits = _result.points
-                if hits and (best is None or hits[0].score > best[0]):
-                    best = (hits[0].score, span_start, span_end, hits[0].payload or {})
+                for embedding in embeddings
+            ],
+        )
+
+        for (_, span_start, span_end), result in zip(candidates, batch_results):
+            hits = result.points
+            if hits and (best is None or hits[0].score > best[0]):
+                best = (hits[0].score, span_start, span_end, hits[0].payload or {})
 
         if best is None:
             return None
@@ -116,19 +158,33 @@ class SpanTagger:
     ) -> list[SpanLabelDto]:
         """형태소 토큰 단위로 emotion_words 컬렉션을 검색한다."""
         spans: list[SpanLabelDto] = []
-        for token in tokens:
-            if token.tag not in _VALID_POS:
-                continue
-            if len(token.form) < 2:
-                continue
-            embedding = self.model.encode(token.form).tolist()
-            _result = self.qdrant.query_points(
-                collection_name=QDRANT_EMOTION_COLLECTION,
-                query=embedding,
-                limit=1,
-                score_threshold=EMOTION_SIMILARITY_THRESHOLD,
-            )
-            hits = _result.points
+
+        # 유효 토큰 필터링
+        valid_tokens = [
+            t for t in tokens
+            if t.tag in _VALID_POS and len(t.form) >= 2
+        ]
+        if not valid_tokens:
+            return spans
+
+        # 배치 encode (1회 호출)
+        embeddings = self.model.encode([t.form for t in valid_tokens])
+
+        # 배치 쿼리 (1회 HTTP 요청)
+        batch_results = self.qdrant.query_batch_points(
+            collection_name=QDRANT_EMOTION_COLLECTION,
+            requests=[
+                QueryRequest(
+                    query=embedding.tolist(),
+                    limit=1,
+                    score_threshold=EMOTION_SIMILARITY_THRESHOLD,
+                )
+                for embedding in embeddings
+            ],
+        )
+
+        for token, result in zip(valid_tokens, batch_results):
+            hits = result.points
             if not hits:
                 continue
             payload = hits[0].payload or {}
