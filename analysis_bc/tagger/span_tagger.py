@@ -159,7 +159,7 @@ class SpanTagger:
         """형태소 토큰 단위로 emotion_words 컬렉션을 검색한다."""
         spans: list[SpanLabelDto] = []
 
-        # 유효 토큰 필터링
+        # 유효한 토큰만 먼저 전부 모음
         valid_tokens = [
             t for t in tokens
             if t.tag in _VALID_POS and len(t.form) >= 2
@@ -167,7 +167,7 @@ class SpanTagger:
         if not valid_tokens:
             return spans
 
-        # 배치 encode (1회 호출)
+        # 배치 encode (1회 호출) / 모아둔 것 전체를 한 번에 encode → 한 번에 쿼리
         embeddings = self.model.encode([t.form for t in valid_tokens])
 
         # 배치 쿼리 (1회 HTTP 요청)
