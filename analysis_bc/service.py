@@ -50,29 +50,37 @@ class AnalysisService:
         )
 
         # span 태깅 (opinion_sentences 대상 — emotion vs anonymous 유사도 비교 후 단일 태그)
+        print("[서비스] SpanTagger 시작")
         sentence_labels = self.span_tagger.tag(opinion_sentences)
+        print(f"[서비스] SpanTagger 완료 — 라벨 수: {len(sentence_labels)}")
 
         # 제목-본문 갭
+        print("[서비스] TitleBodyGap 계산 시작")
         title_body_gap = self.title_body_gap_calculator.calculate(
             title=request.title,
             sentences=sentences,
         )
+        print(f"[서비스] TitleBodyGap 완료 — gap: {title_body_gap:.4f}")
 
+        print("[서비스] Scorer 시작")
         scores = self.scorer.calculate(
             classified=classified,
             span_labels=sentence_labels,
             headline_body_gap=title_body_gap,
         )
+        print(f"[서비스] Scorer 완료 — overall: {scores['overall_bias_score']:.4f}")
 
-        # 4단계: FACT 문장 상위 필터링
+        # FACT 문장 상위 필터링
         FACT_TOP_N = 10
         top_facts = sorted(
             fact_sentences,
             key=lambda s: s.confidence,
             reverse=True,
         )[:FACT_TOP_N]
+        print(f"[서비스] FACT 상위 필터링 완료 — {len(top_facts)}개")
 
-        # 5단계: 요약 생성 (Claude API)
+        # 요약 생성 (Claude API)
+        print("[서비스] Summarizer 시작")
         summary = self.summarizer.summarize(
             fact_sentences=top_facts,
             opinion_sentences=opinion_sentences,
@@ -80,20 +88,42 @@ class AnalysisService:
             title=request.title,
             language=request.language,
         )
+        print("[서비스] Summarizer 완료")
 
+        print("[서비스] KeywordExtractor 시작")
         keywords = self.keyword_extractor.extract(
             sentences=sentences,
             classified=classified,
             span_labels=sentence_labels,
         )
+        print(f"[서비스] KeywordExtractor 완료 — 키워드 수: {len(keywords)}")
 
+        print("[서비스] EvidenceExtractor 시작")
         evidences = self.evidence_extractor.extract(
             sentences=sentences,
             classified=classified,
             span_labels=sentence_labels,
         )
+        print(f"[서비스] EvidenceExtractor 완료 — 근거 수: {len(evidences)}")
 
         logger.debug("analyze: target_id=%d, sentences=%d", request.target_id, len(sentences))
+
+        print(
+            f"[서비스] 최종 응답\n"
+            f"  - overall_bias_score  : {scores['overall_bias_score']:.4f}\n"
+            f"  - opinion_score       : {scores['opinion_score']:.4f}\n"
+            f"  - emotion_score       : {scores['emotion_score']:.4f}\n"
+            f"  - anonymous_score     : {scores['anonymous_source_score']:.4f}\n"
+            f"  - headline_body_gap   : {title_body_gap:.4f}\n"
+            f"  - subjectivity_score  : {scores['subjectivity_score']:.4f}\n"
+            f"  - tone_label          : {summary['tone_label']}\n"
+            f"  - keywords            : {len(keywords)}개\n"
+            f"  - sentence_labels     : {len(sentence_labels)}개\n"
+            f"  - evidences           : {len(evidences)}개\n"
+            f"  - summary_text        : {summary['summary_text'][:50]}...\n"
+            f"  - perspective_summary : {summary['perspective_summary'][:50]}...\n"
+            f"  - evidence_summary    : {summary['evidence_summary'][:50]}..."
+        )
 
         return BiasAnalysisResultDto(
             target_id=request.target_id,
