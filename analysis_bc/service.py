@@ -106,7 +106,12 @@ class AnalysisService:
         )
         print(f"[서비스] EvidenceExtractor 완료 — 근거 수: {len(evidences)}")
 
-        logger.debug("analyze: target_id=%d, sentences=%d", request.target_id, len(sentences))
+        logger.debug(
+            "analyze: target_id=%d, transcript_id=%s, sentences=%d",
+            request.target_id,
+            request.transcript_id,
+            len(sentences),
+        )
 
         print(
             f"[서비스] 최종 응답\n"
@@ -127,6 +132,7 @@ class AnalysisService:
 
         return BiasAnalysisResultDto(
             target_id=request.target_id,
+            transcript_id=request.transcript_id,
             overall_bias_score=scores["overall_bias_score"],
             opinion_score=scores["opinion_score"],
             emotion_score=scores["emotion_score"],

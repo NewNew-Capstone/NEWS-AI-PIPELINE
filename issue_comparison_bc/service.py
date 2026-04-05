@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import numpy as np
-from sentence_transformers import SentenceTransformer
+import numpy as np 
+from sentence_transformers import SentenceTransformer 
 
 from issue_comparison_bc.schemas import ClusterSimilarityRequest, ClusterSimilarityResponse
 
