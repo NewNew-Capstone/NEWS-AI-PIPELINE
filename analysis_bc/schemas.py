@@ -89,6 +89,7 @@ class BiasAnalysisResultDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     target_id: int
+    transcript_id: int | None = None
     overall_bias_score: float
     opinion_score: float
     emotion_score: float

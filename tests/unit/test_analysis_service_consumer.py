@@ -46,6 +46,7 @@ def test_analyze_content_returns_target_id() -> None:
         result = AnalysisService().analyze(request)
 
     assert result.target_id == 1
+    assert result.transcript_id == 10
 
 
 def test_analyze_content_stub_returns_empty_lists() -> None:

@@ -19,7 +19,10 @@ def analyze(request: AnalyzeRequestDto) -> BiasAnalysisResultDto:
 @router.post("/raw", response_model=RawAnalysisResultDto)
 def analyze_raw(request: AnalyzeRawTextRequestDto) -> RawAnalysisResultDto:
     print("=== [/analyze/raw] 받은 요청 ===")
-    print(f"target_id={request.target_id}, title={request.title}, language={request.language}")
+    print(
+        f"target_id={request.target_id}, transcript_id={request.transcript_id}, "
+        f"title={request.title}, language={request.language}"
+    )
     print(f"raw_text 길이={len(request.raw_text)}, 앞 100자: {request.raw_text[:100]}")
     sentences = split_into_sentences(request.raw_text, request.language)
     print(f"분리된 문장 수: {len(sentences)}")

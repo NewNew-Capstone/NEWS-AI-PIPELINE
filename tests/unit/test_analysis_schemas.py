@@ -87,6 +87,7 @@ def test_bias_evidence_dto_valid() -> None:
 def test_bias_analysis_result_dto_full() -> None:
     result = BiasAnalysisResultDto(
         target_id=42,
+        transcript_id=7,
         overall_bias_score=0.5,
         opinion_score=0.6,
         emotion_score=0.4,
@@ -112,6 +113,7 @@ def test_bias_analysis_result_dto_full() -> None:
         ],
     )
     assert result.target_id == 42
+    assert result.transcript_id == 7
     assert result.headline_body_gap_score is None
     assert result.neutrality_score is None
     assert len(result.keywords) == 1
