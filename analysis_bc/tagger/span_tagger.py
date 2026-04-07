@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 from kiwipiepy import Kiwi
 from qdrant_client import QdrantClient
@@ -22,6 +23,7 @@ from analysis_bc.schemas import SpanLabelDto
 logger = logging.getLogger(__name__)
 
 _ANON_WINDOW_SIZES = (2, 3, 4)
+_HEALTH_CHECK_TTL = 30.0  # 초: 이 시간 동안 재확인 없이 캐시된 결과 사용
 
 _VALID_POS: frozenset[str] = frozenset({
     "NNG",  # 일반 명사
@@ -44,16 +46,25 @@ class SpanTagger:
         self.kiwi = Kiwi()
         self.model = SentenceTransformer("jhgan/ko-sroberta-multitask")
         self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=3.0)
+        self._qdrant_healthy: bool = False
+        self._health_checked_at: float = 0.0
 
     def _is_qdrant_healthy(self) -> bool:
+        now = time.monotonic()
+        if now - self._health_checked_at < _HEALTH_CHECK_TTL:
+            return self._qdrant_healthy
+
         try:
             self.qdrant.get_collections()
+            self._qdrant_healthy = True
             print("[SpanTagger] Qdrant health check passed")
-            return True
         except Exception:
+            self._qdrant_healthy = False
             print("[SpanTagger] Qdrant health check failed — skipping SpanTagger")
             logger.warning("Qdrant health check failed, skipping SpanTagger")
-            return False
+
+        self._health_checked_at = now
+        return self._qdrant_healthy
 
     def tag(self, sentences: list[ClassifiedSentenceDto]) -> list[SpanLabelDto]:
         print(f"[SpanTagger] tag() 시작 — opinion 문장 수: {len(sentences)}")

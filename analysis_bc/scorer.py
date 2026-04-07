@@ -4,6 +4,10 @@ from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.enums import SentenceLabelType
 from analysis_bc.schemas import SpanLabelDto
 
+_W_OPINION   = 0.6
+_W_EMOTION   = 0.3
+_W_ANONYMOUS = 0.1
+
 _EMPTY_RESULT: dict = {
     "subjectivity_score": 0.0,
     "score_evidence": "",
@@ -47,35 +51,35 @@ class BiasScorer:
         gap_weight = 1.0 + headline_body_gap * 0.3
         subjectivity_score = round(min(raw_score * gap_weight, 100.0), 2)
 
-        # ④ span 카운트
-        emotional_count = sum(
-            1 for s in span_labels
+        # ④ 문장 기준 span 카운트 (감정/익명/추측 span이 1개 이상 있는 고유 문장 수)
+        emotional_sentence_count = len({
+            s.content_sentence_id for s in span_labels
             if s.label_type in (
                 SentenceLabelType.EMOTIONALLY_LOADED,
                 SentenceLabelType.EMOTIONALLY_LOADED.value,
             )
-        )
-        anonymous_count = sum(
-            1 for s in span_labels
+        })
+        anonymous_sentence_count = len({
+            s.content_sentence_id for s in span_labels
             if s.label_type in (
                 SentenceLabelType.ANONYMOUS_SOURCE,
                 SentenceLabelType.ANONYMOUS_SOURCE.value,
             )
-        )
-        speculative_count = sum(
-            1 for s in span_labels
+        })
+        speculative_sentence_count = len({
+            s.content_sentence_id for s in span_labels
             if s.label_type in (
                 SentenceLabelType.SPECULATIVE,
                 SentenceLabelType.SPECULATIVE.value,
             )
-        )
+        })
 
-        # ⑤ bias_type_scores
+        # ⑤ bias_type_scores (모두 문장 기준 → 0~1 보장)
         bias_type_scores = {
-            "OPINION":     round(opinion_count     / total, 4),
-            "EMOTIONAL":   round(emotional_count   / total, 4),
-            "ANONYMOUS":   round(anonymous_count   / total, 4),
-            "SPECULATIVE": round(speculative_count / total, 4),
+            "OPINION":     round(opinion_count              / total, 4),
+            "EMOTIONAL":   round(emotional_sentence_count   / total, 4),
+            "ANONYMOUS":   round(anonymous_sentence_count   / total, 4),
+            "SPECULATIVE": round(speculative_sentence_count / total, 4),
         }
 
         # ⑥ score_evidence
@@ -83,11 +87,19 @@ class BiasScorer:
             classified=classified,
             opinion_sentences=opinion_sentences,
             opinion_count=opinion_count,
-            emotional_count=emotional_count,
-            anonymous_count=anonymous_count,
-            speculative_count=speculative_count,
+            emotional_sentence_count=emotional_sentence_count,
+            anonymous_sentence_count=anonymous_sentence_count,
+            speculative_sentence_count=speculative_sentence_count,
             total=total,
             headline_body_gap=headline_body_gap,
+        )
+
+        # 문장 기준이므로 클리핑 불필요 (이미 0~1)
+        overall_bias_score = round(
+            _W_OPINION   * (subjectivity_score / 100)
+            + _W_EMOTION   * bias_type_scores["EMOTIONAL"]
+            + _W_ANONYMOUS * bias_type_scores["ANONYMOUS"],
+            4,
         )
 
         return {
@@ -97,7 +109,7 @@ class BiasScorer:
             "opinion_score":          bias_type_scores["OPINION"],
             "emotion_score":          bias_type_scores["EMOTIONAL"],
             "anonymous_source_score": bias_type_scores["ANONYMOUS"],
-            "overall_bias_score":     round(subjectivity_score / 100, 4),
+            "overall_bias_score":     overall_bias_score,
         }
 
     # ------------------------------------------------------------------
@@ -118,9 +130,9 @@ class BiasScorer:
         classified: list[ClassifiedSentenceDto],
         opinion_sentences: list[ClassifiedSentenceDto],
         opinion_count: int,
-        emotional_count: int,
-        anonymous_count: int,
-        speculative_count: int,
+        emotional_sentence_count: int,
+        anonymous_sentence_count: int,
+        speculative_sentence_count: int,
         total: int,
         headline_body_gap: float,
     ) -> str:
@@ -139,13 +151,13 @@ class BiasScorer:
         if opinion_count > 0 and front_opinion_count / opinion_count >= 0.5:
             evidence.append("주관적 표현이 도입부에 집중되어 있습니다.")
 
-        # span 근거
-        if emotional_count > 0:
-            evidence.append(f"감정적 표현이 {emotional_count}건 감지되었습니다.")
-        if anonymous_count > 0:
-            evidence.append(f"익명 출처 표현이 {anonymous_count}건 감지되었습니다.")
-        if speculative_count > 0:
-            evidence.append(f"추측성 표현이 {speculative_count}건 감지되었습니다.")
+        # span 근거 (문장 수 기준)
+        if emotional_sentence_count > 0:
+            evidence.append(f"감정적 표현이 {emotional_sentence_count}개 문장에서 감지되었습니다.")
+        if anonymous_sentence_count > 0:
+            evidence.append(f"익명 출처 표현이 {anonymous_sentence_count}개 문장에서 감지되었습니다.")
+        if speculative_sentence_count > 0:
+            evidence.append(f"추측성 표현이 {speculative_sentence_count}개 문장에서 감지되었습니다.")
 
         # 제목-본문 갭
         if headline_body_gap >= 0.7:

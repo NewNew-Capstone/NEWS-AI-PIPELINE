@@ -69,7 +69,7 @@ def test_classify_splits_fact_and_opinion(mock_classifier: FactOpinionClassifier
         SentenceInputDto(content_sentence_id=4, sentence_text="s4", sentence_order=4),
         SentenceInputDto(content_sentence_id=5, sentence_text="s5", sentence_order=5),
     ]
-    predict_results = [
+    batch_results = [
         ("fact_like", 0.99),
         ("opinion_like", 0.87),
         ("fact_like", 0.95),
@@ -77,7 +77,7 @@ def test_classify_splits_fact_and_opinion(mock_classifier: FactOpinionClassifier
         ("fact_like", 0.91),
     ]
 
-    with patch.object(mock_classifier, "predict", side_effect=predict_results):
+    with patch.object(mock_classifier, "predict_batch", return_value=batch_results):
         classified = mock_classifier.classify(sentences)
 
     fact = [s for s in classified if s.label == "fact_like"]
@@ -98,7 +98,7 @@ def test_classified_sentence_dto_fields(mock_classifier: FactOpinionClassifier) 
         end_time_ms=2000,
     )
 
-    with patch.object(mock_classifier, "predict", return_value=("fact_like", 0.98)):
+    with patch.object(mock_classifier, "predict_batch", return_value=[("fact_like", 0.98)]):
         result = mock_classifier.classify([sentence])
 
     assert len(result) == 1
