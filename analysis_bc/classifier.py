@@ -6,6 +6,8 @@ from transformers import AutoTokenizer, ElectraForSequenceClassification
 
 from analysis_bc.schemas import SentenceInputDto
 
+_MAX_LENGTH = 128
+
 
 class ClassifiedSentenceDto(BaseModel):
     content_sentence_id: int
@@ -30,7 +32,8 @@ class FactOpinionClassifier:
             text,
             return_tensors="pt",
             truncation=True,
-            max_length=128,
+            max_length=_MAX_LENGTH,
+            padding=True,
         )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         with torch.no_grad():
@@ -41,22 +44,42 @@ class FactOpinionClassifier:
         confidence: float = probs[pred].item()
         return label, confidence
 
+    def predict_batch(self, texts: list[str]) -> list[tuple[str, float]]:
+        inputs = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            truncation=True,
+            max_length=_MAX_LENGTH,
+            padding=True,
+        )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        with torch.no_grad():
+            logits = self.model(**inputs).logits
+        preds_tensor = logits.argmax(-1)
+        probs = torch.softmax(logits, dim=-1)
+        confidences = torch.gather(probs, 1, preds_tensor.unsqueeze(1)).squeeze(1)
+        return [
+            (self.model.config.id2label[pred], conf.item())
+            for pred, conf in zip(preds_tensor.tolist(), confidences)
+        ]
+
     def classify(
         self,
         sentences: list[SentenceInputDto],
     ) -> list[ClassifiedSentenceDto]:
-        results: list[ClassifiedSentenceDto] = []
-        for s in sentences:
-            label, confidence = self.predict(s.sentence_text)
-            results.append(
-                ClassifiedSentenceDto(
-                    content_sentence_id=s.content_sentence_id,
-                    sentence_text=s.sentence_text,
-                    sentence_order=s.sentence_order,
-                    start_time_ms=s.start_time_ms,
-                    end_time_ms=s.end_time_ms,
-                    label=label,
-                    confidence=confidence,
-                )
+        if not sentences:
+            return []
+        texts = [s.sentence_text for s in sentences]
+        predictions = self.predict_batch(texts)
+        return [
+            ClassifiedSentenceDto(
+                content_sentence_id=s.content_sentence_id,
+                sentence_text=s.sentence_text,
+                sentence_order=s.sentence_order,
+                start_time_ms=s.start_time_ms,
+                end_time_ms=s.end_time_ms,
+                label=label,
+                confidence=confidence,
             )
-        return results
+            for s, (label, confidence) in zip(sentences, predictions)
+        ]

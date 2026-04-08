@@ -65,7 +65,7 @@ class TestBiasScorer:
         classified = [_make_classified(i, label="opinion_like", confidence=1.0) for i in range(1, 6)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
         assert result["subjectivity_score"] > 0.0
-        assert result["overall_bias_score"] == pytest.approx(result["subjectivity_score"] / 100, abs=1e-4)
+        assert result["overall_bias_score"] > 0.0
 
     def test_position_weight_front_heavy(self) -> None:
         # 10문장 중 앞 3개(≤33%)가 전부 opinion → "도입부" evidence 포함
@@ -111,10 +111,20 @@ class TestBiasScorer:
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=1.0)
         assert result["subjectivity_score"] <= 100.0
 
-    def test_overall_bias_score_equals_subjectivity_divided_by_100(self) -> None:
+    def test_overall_bias_score_weighted_no_spans(self) -> None:
+        # span 없을 때: overall = 0.6 * (subjectivity/100)
         classified = [_make_classified(i) for i in range(1, 6)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.5)
-        assert result["overall_bias_score"] == pytest.approx(result["subjectivity_score"] / 100, abs=1e-4)
+        expected = pytest.approx(0.6 * result["subjectivity_score"] / 100, abs=1e-4)
+        assert result["overall_bias_score"] == expected
+
+    def test_overall_includes_emotion_and_anonymous(self) -> None:
+        # emotion span 있을 때 overall이 opinion-only보다 높아야 함
+        classified = [_make_classified(i) for i in range(1, 6)]
+        result_no_span = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
+        span_labels = [_make_span(SentenceLabelType.EMOTIONALLY_LOADED, i) for i in range(1, 6)]
+        result_with_span = self.scorer.calculate(classified=classified, span_labels=span_labels, headline_body_gap=0.0)
+        assert result_with_span["overall_bias_score"] > result_no_span["overall_bias_score"]
 
     def test_gap_evidence_high(self) -> None:
         classified = [_make_classified(1)]
