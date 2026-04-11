@@ -19,3 +19,4 @@ kiwipiepy
 sentence-transformers
 qdrant-client
 redis
+fasttext-wheel

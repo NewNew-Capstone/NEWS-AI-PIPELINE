@@ -11,10 +11,13 @@ QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 
 QDRANT_EMOTION_COLLECTION      = "emotion_words"
-EMOTION_SIMILARITY_THRESHOLD   = 0.85
+EMOTION_VECTOR_SIZE            = 300   # FastText cc.ko.300
+EMOTION_SIMILARITY_THRESHOLD   = 0.80  # FastText cosine은 더 분별력 있어 낮춰도 됨
 
 QDRANT_ANONYMOUS_COLLECTION    = "anonymous_patterns"
-ANONYMOUS_SIMILARITY_THRESHOLD = 0.85
+ANONYMOUS_SIMILARITY_THRESHOLD = 0.90
+
+FASTTEXT_MODEL_PATH = os.getenv("FASTTEXT_MODEL_PATH", "analysis_bc/data/cc.ko.300.bin")
 
 REDIS_ANONYMOUS_KEY   = "pattern:anonymous:list"
 REDIS_SPECULATIVE_KEY = "pattern:speculative:list"

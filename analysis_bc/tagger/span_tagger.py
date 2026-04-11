@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import time
 
+import fasttext
+import numpy as np
 from kiwipiepy import Kiwi
 from qdrant_client import QdrantClient
 from qdrant_client.models import QueryRequest
@@ -12,6 +14,7 @@ from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.config import (
     ANONYMOUS_SIMILARITY_THRESHOLD,
     EMOTION_SIMILARITY_THRESHOLD,
+    FASTTEXT_MODEL_PATH,
     QDRANT_ANONYMOUS_COLLECTION,
     QDRANT_EMOTION_COLLECTION,
     QDRANT_HOST,
@@ -31,20 +34,22 @@ _VALID_POS: frozenset[str] = frozenset({
     "VV",   # 동사
     "VA",   # 형용사
     "MAG",  # 일반 부사
+    "XR",   # 어근 (심각하다 → 심각, 결렬하다 → 결렬 등 한자어 어근)
 })
 
 
 class SpanTagger:
     """OPINION 문장의 span에 단일 태그를 붙여 반환한다.
 
-    - anonymous 검색: 토큰 2~4개 슬라이딩 윈도우 → anonymous_patterns 컬렉션
-    - emotion 검색  : 형태소 토큰 단위 → emotion_words 컬렉션
+    - anonymous 검색: 토큰 2~4개 슬라이딩 윈도우 → anonymous_patterns 컬렉션 (ko-sroberta)
+    - emotion 검색  : 형태소 토큰 단위 → emotion_words 컬렉션 (FastText)
     - 두 span이 겹치면 score가 더 높은 쪽 하나만 유지한다.
     """
 
     def __init__(self) -> None:
         self.kiwi = Kiwi()
-        self.model = SentenceTransformer("jhgan/ko-sroberta-multitask")
+        self.st_model = SentenceTransformer("jhgan/ko-sroberta-multitask")  # anonymous용
+        self.ft_model = fasttext.load_model(FASTTEXT_MODEL_PATH)            # emotion용
         self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=3.0)
         self._qdrant_healthy: bool = False
         self._health_checked_at: float = 0.0
@@ -117,9 +122,9 @@ class SpanTagger:
         if not candidates:
             return None
 
-        # 배치 encode (1회 호출)
+        # 배치 encode (1회 호출) — anonymous는 ko-sroberta 사용
         texts = [c[0] for c in candidates]
-        embeddings = self.model.encode(texts)
+        embeddings = self.st_model.encode(texts)
 
         # 배치 쿼리 (1회 HTTP 요청)
         batch_results = self.qdrant.query_batch_points(
@@ -129,6 +134,7 @@ class SpanTagger:
                     query=embedding.tolist(),
                     limit=1,
                     score_threshold=ANONYMOUS_SIMILARITY_THRESHOLD,
+                    with_payload=True,
                 )
                 for embedding in embeddings
             ],
@@ -167,10 +173,15 @@ class SpanTagger:
         sentence: ClassifiedSentenceDto,
         tokens: list,
     ) -> list[SpanLabelDto]:
-        """형태소 토큰 단위로 emotion_words 컬렉션을 검색한다."""
+        """형태소 토큰을 FastText로 embed 후 emotion_words 컬렉션에서 검색한다.
+
+        ko-sroberta 대신 FastText를 사용하는 이유:
+        FastText는 단어/형태소 레벨 임베딩에 최적화된 모델로, 단일 형태소 간
+        의미 거리를 정확하게 표현한다. ko-sroberta는 문장 쌍 학습 모델이라
+        단일 형태소 embed 시 노이즈가 심해 false positive가 발생한다.
+        """
         spans: list[SpanLabelDto] = []
 
-        # 유효한 토큰만 먼저 전부 모음
         valid_tokens = [
             t for t in tokens
             if t.tag in _VALID_POS and len(t.form) >= 2
@@ -178,19 +189,28 @@ class SpanTagger:
         if not valid_tokens:
             return spans
 
-        # 배치 encode (1회 호출) / 모아둔 것 전체를 한 번에 encode → 한 번에 쿼리
-        embeddings = self.model.encode([t.form for t in valid_tokens])
+        # FastText embed + 단위 벡터 정규화 (init_qdrant와 동일하게)
+        # token.form(어간) 대신 원문 표면형 사용 → init_qdrant의 word 필드와 형태 일치
+        embeddings = []
+        for t in valid_tokens:
+            surface = sentence.sentence_text[t.start:t.start + t.len]
+            vec = self.ft_model.get_word_vector(surface)
+            norm = np.linalg.norm(vec)
+            if norm > 0:
+                vec = vec / norm
+            embeddings.append(vec)
 
         # 배치 쿼리 (1회 HTTP 요청)
         batch_results = self.qdrant.query_batch_points(
             collection_name=QDRANT_EMOTION_COLLECTION,
             requests=[
                 QueryRequest(
-                    query=embedding.tolist(),
+                    query=vec.tolist(),
                     limit=1,
                     score_threshold=EMOTION_SIMILARITY_THRESHOLD,
+                    with_payload=True,
                 )
-                for embedding in embeddings
+                for vec in embeddings
             ],
         )
 
@@ -198,11 +218,11 @@ class SpanTagger:
             hits = result.points
             if not hits:
                 continue
-            payload = hits[0].payload or {}
+            surface = sentence.sentence_text[token.start:token.start + token.len]
             logger.debug(
-                "emotion tag: id=%d token=%s score=%.4f",
+                "emotion tag: id=%d surface=%s score=%.4f",
                 sentence.content_sentence_id,
-                token.form,
+                surface,
                 hits[0].score,
             )
             spans.append(
@@ -212,7 +232,7 @@ class SpanTagger:
                     end_offset=token.start + token.len,
                     label_type=SentenceLabelType.EMOTIONALLY_LOADED,
                     score=hits[0].score,
-                    matched_word=payload.get("word_root"),
+                    matched_word=surface,
                 )
             )
         return spans

@@ -34,7 +34,8 @@ def check(client: QdrantClient) -> None:
 
         info = client.get_collection(name)
         count = info.points_count
-        print(f"\n[OK] {name}: {count} points")
+        vector_size = info.config.params.vectors.size
+        print(f"\n[OK] {name}: {count} points, vector_size={vector_size}")
 
         results, _ = client.scroll(collection_name=name, limit=1, with_payload=True)
         if results:
