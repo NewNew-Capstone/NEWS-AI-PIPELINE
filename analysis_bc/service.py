@@ -118,7 +118,6 @@ class AnalysisService:
             f"  - overall_bias_score  : {scores['overall_bias_score']:.4f}\n"
             f"  - opinion_score       : {scores['opinion_score']:.4f}\n"
             f"  - emotion_score       : {scores['emotion_score']:.4f}\n"
-            f"  - anonymous_score     : {scores['anonymous_source_score']:.4f}\n"
             f"  - headline_body_gap   : {title_body_gap:.4f}\n"
             f"  - subjectivity_score  : {scores['subjectivity_score']:.4f}\n"
             f"  - tone_label          : {summary['tone_label']}\n"
@@ -136,7 +135,6 @@ class AnalysisService:
             overall_bias_score=scores["overall_bias_score"],
             opinion_score=scores["opinion_score"],
             emotion_score=scores["emotion_score"],
-            anonymous_source_score=scores["anonymous_source_score"],
             headline_body_gap_score=title_body_gap,
             subjectivity_score=scores["subjectivity_score"],
             score_evidence=scores["score_evidence"],

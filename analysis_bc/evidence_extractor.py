@@ -10,15 +10,11 @@ logger = logging.getLogger(__name__)
 
 _LABEL_TO_EVIDENCE: dict[str, EvidenceType] = {
     SentenceLabelType.EMOTIONALLY_LOADED.value: EvidenceType.EMOTION,
-    SentenceLabelType.ANONYMOUS_SOURCE.value: EvidenceType.ANONYMOUS_SOURCE,
-    SentenceLabelType.SPECULATIVE.value: EvidenceType.SPECULATION,
     SentenceLabelType.OPINION_LIKE.value: EvidenceType.OPINION,
 }
 
 _EVIDENCE_TITLE: dict[EvidenceType, str] = {
     EvidenceType.EMOTION: "감정적 표현",
-    EvidenceType.ANONYMOUS_SOURCE: "익명 출처",
-    EvidenceType.SPECULATION: "추측성 표현",
     EvidenceType.OPINION: "주관적 의견",
 }
 

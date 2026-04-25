@@ -49,6 +49,7 @@ def test_evidence_type_values() -> None:
 
 
 def test_bias_keyword_type_values() -> None:
+    
     assert BiasKeywordType.EMOTION == "EMOTION"
     assert BiasKeywordType.FRAME == "FRAME"
     assert BiasKeywordType.TOPIC == "TOPIC"
