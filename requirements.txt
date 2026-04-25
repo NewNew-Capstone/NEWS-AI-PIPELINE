@@ -20,3 +20,4 @@ sentence-transformers
 qdrant-client
 redis
 fasttext-wheel
+deep-translator
