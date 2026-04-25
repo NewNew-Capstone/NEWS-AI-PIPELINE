@@ -25,8 +25,6 @@ class SentenceLabelType(str, Enum):
     FACT_LIKE = "FACT_LIKE"
     OPINION_LIKE = "OPINION_LIKE"
     EMOTIONALLY_LOADED = "EMOTIONALLY_LOADED"
-    ANONYMOUS_SOURCE = "ANONYMOUS_SOURCE"
-    SPECULATIVE = "SPECULATIVE"
 
 
 class EvidenceType(str, Enum):

@@ -93,7 +93,7 @@ class BiasAnalysisResultDto(BaseModel):
     overall_bias_score: float
     opinion_score: float
     emotion_score: float
-    anonymous_source_score: float
+    anonymous_source_score: float = 0.0
     headline_body_gap_score: float | None = None
     neutrality_score: float | None = None
     summary_text: str
