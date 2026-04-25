@@ -1,0 +1,68 @@
+{
+  "criteria": {
+    "support_unique_text_min": 5,
+    "template_count_min": 2,
+    "impact_required": true
+  },
+  "confirmed_fp_patterns": {},
+  "confirmed_fn_patterns": {},
+  "candidate_fp_patterns": {
+    "수치": {
+      "support_unique_text": 1,
+      "template_count": 1,
+      "impact": {
+        "delta_fp": 1,
+        "delta_fn": 0
+      },
+      "status": "candidate"
+    }
+  },
+  "candidate_fn_patterns": {
+    "진행자": {
+      "support_unique_text": 1,
+      "template_count": 1,
+      "impact": {
+        "delta_fp": 0,
+        "delta_fn": 1
+      },
+      "status": "candidate"
+    },
+    "진짜": {
+      "support_unique_text": 1,
+      "template_count": 1,
+      "impact": {
+        "delta_fp": 0,
+        "delta_fn": 1
+      },
+      "status": "candidate"
+    },
+    "방금": {
+      "support_unique_text": 1,
+      "template_count": 1,
+      "impact": {
+        "delta_fp": 0,
+        "delta_fn": 1
+      },
+      "status": "candidate"
+    },
+    "너무": {
+      "support_unique_text": 1,
+      "template_count": 1,
+      "impact": {
+        "delta_fp": 0,
+        "delta_fn": 1
+      },
+      "status": "candidate"
+    },
+    "기준": {
+      "support_unique_text": 1,
+      "template_count": 1,
+      "impact": {
+        "delta_fp": 0,
+        "delta_fn": 1
+      },
+      "status": "candidate"
+    }
+  },
+  "blacklist_candidates": []
+}
