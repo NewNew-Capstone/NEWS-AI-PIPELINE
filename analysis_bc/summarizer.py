@@ -89,14 +89,6 @@ class BiasSummarizer:
                 SentenceLabelType.EMOTIONALLY_LOADED.value,
             )
         ]
-        anonymous_spans = [
-            s for s in span_labels
-            if s.label_type in (
-                SentenceLabelType.ANONYMOUS_SOURCE,
-                SentenceLabelType.ANONYMOUS_SOURCE.value,
-            )
-        ]
-
         return f"""
 아래는 뉴스 영상의 제목과 문장 분석 결과야.
 
@@ -110,7 +102,6 @@ class BiasSummarizer:
 
 [감지된 편향]
 - 감정적 표현: {len(emotional_spans)}건
-- 익명 출처: {len(anonymous_spans)}건
 
 아래 4가지를 한국어로 간결하게 작성해줘.
 JSON 형식으로만 응답해줘.
