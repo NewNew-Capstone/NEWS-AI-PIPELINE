@@ -91,7 +91,6 @@ def test_bias_analysis_result_dto_full() -> None:
         overall_bias_score=0.5,
         opinion_score=0.6,
         emotion_score=0.4,
-        anonymous_source_score=0.2,
         summary_text="요약",
         perspective_summary="관점 요약",
         evidence_summary="근거 요약",

@@ -35,17 +35,14 @@ def test_sentence_label_type_values() -> None:
     assert SentenceLabelType.FACT_LIKE == "FACT_LIKE"
     assert SentenceLabelType.OPINION_LIKE == "OPINION_LIKE"
     assert SentenceLabelType.EMOTIONALLY_LOADED == "EMOTIONALLY_LOADED"
-    assert SentenceLabelType.ANONYMOUS_SOURCE == "ANONYMOUS_SOURCE"
-    assert SentenceLabelType.SPECULATIVE == "SPECULATIVE"
-    assert len(list(SentenceLabelType)) == 5
+    assert len(list(SentenceLabelType)) == 3
 
 
 def test_evidence_type_values() -> None:
     assert EvidenceType.OPINION == "OPINION"
     assert EvidenceType.EMOTION == "EMOTION"
-    assert EvidenceType.ANONYMOUS_SOURCE == "ANONYMOUS_SOURCE"
     assert EvidenceType.SPECULATION == "SPECULATION"
-    assert len(list(EvidenceType)) == 4
+    assert len(list(EvidenceType)) == 3
 
 
 def test_bias_keyword_type_values() -> None:

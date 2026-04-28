@@ -49,7 +49,7 @@ class AnalysisService:
             len(opinion_sentences),
         )
 
-        # span 태깅 (opinion_sentences 대상 — emotion vs anonymous 유사도 비교 후 단일 태그)
+        # span 태깅 (opinion_sentences 대상 — emotion 유사도 기반 태그)
         print("[서비스] SpanTagger 시작")
         sentence_labels = self.span_tagger.tag(opinion_sentences)
         print(f"[서비스] SpanTagger 완료 — 라벨 수: {len(sentence_labels)}")

@@ -2,9 +2,7 @@ from analysis_bc.enums import SentenceLabelType
 from analysis_bc.schemas import SpanLabelDto
 
 LABEL_PRIORITY: dict[str, int] = {
-    SentenceLabelType.ANONYMOUS_SOURCE:   1,
-    SentenceLabelType.SPECULATIVE:        2,
-    SentenceLabelType.EMOTIONALLY_LOADED: 3,
+    SentenceLabelType.EMOTIONALLY_LOADED: 1,
 }
 
 

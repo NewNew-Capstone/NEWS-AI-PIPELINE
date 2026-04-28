@@ -73,20 +73,6 @@ class TestEvidenceExtractorMapping:
         assert result[0].title == "감정적 표현"
         assert result[0].confidence_score == 0.9
 
-    def test_anonymous_source_maps_correctly(self, extractor):
-        sentences = [_input_sentence(1, "관계자에 따르면")]
-        span = _span(1, SentenceLabelType.ANONYMOUS_SOURCE, score=0.75, matched_word="관계자")
-        result = extractor.extract(sentences=sentences, classified=[], span_labels=[span])
-        assert result[0].evidence_type == EvidenceType.ANONYMOUS_SOURCE
-        assert result[0].title == "익명 출처"
-
-    def test_speculative_maps_to_speculation(self, extractor):
-        sentences = [_input_sentence(1, "아마도 실패할 것이다")]
-        span = _span(1, SentenceLabelType.SPECULATIVE, score=0.7, matched_word="아마도")
-        result = extractor.extract(sentences=sentences, classified=[], span_labels=[span])
-        assert result[0].evidence_type == EvidenceType.SPECULATION
-        assert result[0].title == "추측성 표현"
-
     def test_opinion_like_classified_adds_evidence(self, extractor):
         sentences = [_input_sentence(1, "이건 잘못된 정책이다")]
         classified = [_classified(1, "이건 잘못된 정책이다", label="opinion_like", conf=0.88)]
