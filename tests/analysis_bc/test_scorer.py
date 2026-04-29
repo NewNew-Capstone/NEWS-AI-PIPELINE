@@ -89,7 +89,7 @@ class TestBiasScorer:
     def test_bias_type_scores_keys(self) -> None:
         classified = [_make_classified(1)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
-        assert set(result["bias_type_scores"].keys()) == {"OPINION", "EMOTIONAL", "ANONYMOUS", "SPECULATIVE"}
+        assert set(result["bias_type_scores"].keys()) == {"OPINION", "EMOTIONAL"}
 
     def test_score_evidence_emotional(self) -> None:
         classified = [_make_classified(1)]
@@ -97,13 +97,6 @@ class TestBiasScorer:
         result = self.scorer.calculate(classified=classified, span_labels=span_labels, headline_body_gap=0.0)
         assert "감정적 표현" in result["score_evidence"]
         assert result["emotion_score"] > 0.0
-
-    def test_score_evidence_anonymous(self) -> None:
-        classified = [_make_classified(1)]
-        span_labels = [_make_span(SentenceLabelType.ANONYMOUS_SOURCE)]
-        result = self.scorer.calculate(classified=classified, span_labels=span_labels, headline_body_gap=0.0)
-        assert "익명 출처" in result["score_evidence"]
-        assert result["anonymous_source_score"] > 0.0
 
     def test_subjectivity_score_max_100(self) -> None:
         # confidence=1.0 × 전부 앞쪽 position_weight(1.3) × gap_weight(1.3) → 100 초과 불가
@@ -118,7 +111,7 @@ class TestBiasScorer:
         expected = pytest.approx(0.6 * result["subjectivity_score"] / 100, abs=1e-4)
         assert result["overall_bias_score"] == expected
 
-    def test_overall_includes_emotion_and_anonymous(self) -> None:
+    def test_overall_includes_emotion(self) -> None:
         # emotion span 있을 때 overall이 opinion-only보다 높아야 함
         classified = [_make_classified(i) for i in range(1, 6)]
         result_no_span = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)

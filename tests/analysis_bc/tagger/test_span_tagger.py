@@ -1,7 +1,6 @@
 """SpanTagger 유닛 테스트.
 
-실제 Kiwi / SentenceTransformer / FastText / Qdrant 연결 없이
-mock으로 전체 흐름을 검증한다.
+실제 Kiwi / FastText / Qdrant 연결 없이 mock으로 전체 흐름을 검증한다.
 """
 from __future__ import annotations
 
@@ -57,12 +56,10 @@ def mock_tagger() -> SpanTagger:
     """실제 모델/Qdrant 연결 없이 SpanTagger 인스턴스 반환."""
     with (
         patch("analysis_bc.tagger.span_tagger.Kiwi") as mock_kiwi_cls,
-        patch("analysis_bc.tagger.span_tagger.SentenceTransformer") as mock_sbert_cls,
         patch("analysis_bc.tagger.span_tagger.fasttext") as mock_ft_module,
         patch("analysis_bc.tagger.span_tagger.QdrantClient") as mock_qdrant_cls,
     ):
         mock_kiwi_cls.return_value = MagicMock()
-        mock_sbert_cls.return_value = MagicMock()
 
         mock_ft = MagicMock()
         mock_ft.get_word_vector.return_value = np.ones(300)
@@ -174,118 +171,3 @@ def test_search_emotion_xr_tag_included(mock_tagger: SpanTagger) -> None:
     assert len(result) == 1
     assert result[0].matched_word == "심각"
     assert result[0].label_type == SentenceLabelType.EMOTIONALLY_LOADED
-
-
-# ── anonymous 태깅 ────────────────────────────────────────────────────────────
-
-def test_search_anonymous_returns_span(mock_tagger: SpanTagger) -> None:
-    """익명 출처 패턴 매칭 → ANONYMOUS_SOURCE span 반환."""
-    sentence = _make_sentence(5, "관계자에 따르면 사태가 심각하다")
-
-    tokens = [
-        _make_token("관계자", "NNG", 0, 3),
-        _make_token("에", "JKB", 3, 1),
-        _make_token("따르", "VV", 5, 2),
-        _make_token("면", "EC", 7, 1),
-    ]
-    mock_tagger.kiwi.tokenize.return_value = tokens
-    mock_tagger.st_model.encode.return_value = np.ones((6, 768))  # 슬라이딩 윈도우 후보 수
-
-    hit = _make_qdrant_hit(1.0, {"phrase": "관계자에 따르면", "label_type": "ANONYMOUS_SOURCE"})
-    # anonymous 쿼리 결과 (emotion은 빈 결과)
-    mock_tagger.qdrant.query_batch_points.side_effect = [
-        [_make_batch_result([hit])] + [_make_batch_result([])] * 5,  # anonymous
-        [],  # emotion (valid_tokens 없음)
-    ]
-
-    result = mock_tagger.tag([sentence])
-
-    anon_spans = [s for s in result if s.label_type == SentenceLabelType.ANONYMOUS_SOURCE]
-    assert len(anon_spans) == 1
-    assert anon_spans[0].matched_word == "관계자에 따르면"
-    assert anon_spans[0].score == pytest.approx(1.0)
-
-
-def test_search_anonymous_no_match(mock_tagger: SpanTagger) -> None:
-    """패턴 없는 문장 → ANONYMOUS_SOURCE 없음."""
-    sentence = _make_sentence(6, "정부는 오늘 예산안을 발표했다")
-
-    mock_tagger.kiwi.tokenize.return_value = [
-        _make_token("정부", "NNG", 0, 2),
-        _make_token("오늘", "MAG", 3, 2),
-    ]
-    mock_tagger.st_model.encode.return_value = np.ones((1, 768))
-    mock_tagger.qdrant.query_batch_points.return_value = [
-        _make_batch_result([]),
-        _make_batch_result([]),
-    ]
-
-    result = mock_tagger.tag([sentence])
-
-    assert all(s.label_type != SentenceLabelType.ANONYMOUS_SOURCE for s in result)
-
-
-# ── _merge ────────────────────────────────────────────────────────────────────
-
-def test_merge_no_overlap(mock_tagger: SpanTagger) -> None:
-    """겹치지 않는 anon + emotion → 둘 다 유지."""
-    anon = SpanLabelDto(
-        content_sentence_id=1, start_offset=0, end_offset=7,
-        label_type=SentenceLabelType.ANONYMOUS_SOURCE, score=1.0, matched_word="관계자에 따르면",
-    )
-    emotion = SpanLabelDto(
-        content_sentence_id=1, start_offset=10, end_offset=12,
-        label_type=SentenceLabelType.EMOTIONALLY_LOADED, score=0.95, matched_word="분노",
-    )
-
-    result = mock_tagger._merge(anon, [emotion])
-
-    assert len(result) == 2
-    assert result[0].start_offset == 0
-    assert result[1].start_offset == 10
-
-
-def test_merge_overlap_anon_wins(mock_tagger: SpanTagger) -> None:
-    """겹칠 때 anon score 더 높으면 anon 유지."""
-    anon = SpanLabelDto(
-        content_sentence_id=1, start_offset=0, end_offset=7,
-        label_type=SentenceLabelType.ANONYMOUS_SOURCE, score=1.0, matched_word="관계자에 따르면",
-    )
-    emotion = SpanLabelDto(
-        content_sentence_id=1, start_offset=3, end_offset=6,
-        label_type=SentenceLabelType.EMOTIONALLY_LOADED, score=0.85, matched_word="따르",
-    )
-
-    result = mock_tagger._merge(anon, [emotion])
-
-    assert len(result) == 1
-    assert result[0].label_type == SentenceLabelType.ANONYMOUS_SOURCE
-
-
-def test_merge_overlap_emotion_wins(mock_tagger: SpanTagger) -> None:
-    """겹칠 때 emotion score 더 높으면 emotion 유지."""
-    anon = SpanLabelDto(
-        content_sentence_id=1, start_offset=0, end_offset=7,
-        label_type=SentenceLabelType.ANONYMOUS_SOURCE, score=0.80, matched_word="관계자에 따르면",
-    )
-    emotion = SpanLabelDto(
-        content_sentence_id=1, start_offset=3, end_offset=6,
-        label_type=SentenceLabelType.EMOTIONALLY_LOADED, score=0.95, matched_word="분노",
-    )
-
-    result = mock_tagger._merge(anon, [emotion])
-
-    assert len(result) == 1
-    assert result[0].label_type == SentenceLabelType.EMOTIONALLY_LOADED
-
-
-def test_merge_anon_none_returns_emotion_spans(mock_tagger: SpanTagger) -> None:
-    """anon_span이 None이면 emotion_spans 그대로 반환."""
-    emotion = SpanLabelDto(
-        content_sentence_id=1, start_offset=0, end_offset=2,
-        label_type=SentenceLabelType.EMOTIONALLY_LOADED, score=0.95, matched_word="분노",
-    )
-
-    result = mock_tagger._merge(None, [emotion])
-
-    assert result == [emotion]

@@ -30,7 +30,6 @@ class SentenceLabelType(str, Enum):
 class EvidenceType(str, Enum):
     OPINION = "OPINION"
     EMOTION = "EMOTION"
-    ANONYMOUS_SOURCE = "ANONYMOUS_SOURCE"
     SPECULATION = "SPECULATION"
 
 

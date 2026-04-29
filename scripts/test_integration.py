@@ -26,13 +26,9 @@ request = AnalyzeRequestDto(
         SentenceInputDto(content_sentence_id=2, sentence_text="서울 아파트 평균 가격이 10억을 넘었다.", sentence_order=2, start_time_ms=None, end_time_ms=None),
         # opinion_like + EMOTIONALLY_LOADED 예상
         SentenceInputDto(content_sentence_id=3, sentence_text="이번 부동산 정책은 정말 최악의 선택이다.", sentence_order=3, start_time_ms=None, end_time_ms=None),
-        # opinion_like + ANONYMOUS_SOURCE 예상 ("군 관계자는")
         SentenceInputDto(content_sentence_id=4, sentence_text="군 관계자는 이번 사태가 심각하다고 밝혔다.", sentence_order=4, start_time_ms=None, end_time_ms=None),
-        # opinion_like + ANONYMOUS_SOURCE 예상 ("시에 따르면")
         SentenceInputDto(content_sentence_id=5, sentence_text="시에 따르면 이번 예산안은 내년에 확정된다.", sentence_order=5, start_time_ms=None, end_time_ms=None),
-        # opinion_like + SPECULATIVE 예상 ("것으로 보인다.")
         SentenceInputDto(content_sentence_id=6, sentence_text="새 법안은 내달 통과될 것으로 보인다.", sentence_order=6, start_time_ms=None, end_time_ms=None),
-        # opinion_like + SPECULATIVE 예상 ("있을 것으로 기대된다.")
         SentenceInputDto(content_sentence_id=7, sentence_text="이번 정책은 효과가 있을 것으로 기대된다.", sentence_order=7, start_time_ms=None, end_time_ms=None),
     ]
 )
@@ -63,7 +59,6 @@ print(f"  subjectivity_score: {result.subjectivity_score}")
 print(f"  overall_bias_score: {result.overall_bias_score}")
 print(f"  opinion_score: {result.opinion_score}")
 print(f"  emotion_score: {result.emotion_score}")
-print(f"  anonymous_source_score: {result.anonymous_source_score}")
 print(f"  score_evidence: {result.score_evidence}")
 print(f"  bias_type_scores: {result.bias_type_scores}")
 

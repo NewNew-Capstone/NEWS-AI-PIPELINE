@@ -78,13 +78,6 @@ class TestKeywordExtractorEmotion:
         result = kw_extractor.extract(sentences=[], classified=[], span_labels=[span])
         assert result == []
 
-    def test_anonymous_span_excluded_from_emotion(self, extractor):
-        kw_extractor, mock_kiwi = extractor
-        mock_kiwi.tokenize.return_value = []
-        span = _span(1, SentenceLabelType.ANONYMOUS_SOURCE, matched_word="관계자")
-        result = kw_extractor.extract(sentences=[], classified=[], span_labels=[span])
-        assert all(k.keyword_type != BiasKeywordType.EMOTION for k in result)
-
 
 class TestKeywordExtractorFilter:
     def test_min_length_filter(self, extractor):
