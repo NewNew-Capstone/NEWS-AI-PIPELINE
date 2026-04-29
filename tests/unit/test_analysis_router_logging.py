@@ -39,24 +39,18 @@ def _make_raw_request() -> AnalyzeRawTextRequestDto:
 def test_analyze_continues_when_log_insert_fails() -> None:
     request = _make_analyze_request()
 
-    mock_repo = MagicMock()
-    mock_repo.insert_request_log.side_effect = RuntimeError("db down")
+    mock_service = MagicMock()
+    mock_service.analyze.return_value = "OK"
 
-    with patch.object(router_mod, "_request_log_repo", mock_repo):
-        with patch("analysis_bc.router.AnalysisService") as service_cls:
-            service_inst = service_cls.return_value
-            service_inst.analyze.return_value = "OK"
-            result = router_mod.analyze(request)
+    with patch("analysis_bc.router.get_analysis_service", return_value=mock_service):
+        result = router_mod.analyze(request)
 
     assert result == "OK"
-    assert mock_repo.insert_request_log.call_count == 1
+    assert mock_service.analyze.call_count == 1
 
 
 def test_analyze_raw_continues_when_log_insert_fails() -> None:
     request = _make_raw_request()
-
-    mock_repo = MagicMock()
-    mock_repo.insert_request_log.side_effect = RuntimeError("db down")
 
     fake_result = MagicMock()
     fake_result.model_dump.return_value = {
@@ -75,11 +69,11 @@ def test_analyze_raw_continues_when_log_insert_fails() -> None:
         "evidences": [],
     }
 
-    with patch.object(router_mod, "_request_log_repo", mock_repo):
-        with patch("analysis_bc.router.AnalysisService") as service_cls:
-            service_inst = service_cls.return_value
-            service_inst.analyze.return_value = fake_result
-            result = router_mod.analyze_raw(request)
+    mock_service = MagicMock()
+    mock_service.analyze.return_value = fake_result
+
+    with patch("analysis_bc.router.get_analysis_service", return_value=mock_service):
+        result = router_mod.analyze_raw(request)
 
     assert result.target_id == 1
-    assert mock_repo.insert_request_log.call_count == 1
+    assert mock_service.analyze.call_count == 1

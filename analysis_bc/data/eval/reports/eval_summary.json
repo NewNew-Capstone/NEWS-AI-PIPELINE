@@ -1,7 +1,7 @@
 {
-  "timestamp_utc": "2026-04-25T07:43:06.277068+00:00",
+  "timestamp_utc": "2026-04-27T10:43:21.974580+00:00",
   "dataset": "analysis_bc/data/eval/emotion_eval_sample.jsonl",
-  "change_reason": "subtitle_fn_cycle_1_after_index",
+  "change_reason": "baseline_dict_manual",
   "criteria": {
     "support_unique_text_min": 5,
     "template_count_min": 2,
@@ -287,21 +287,5 @@
     "error_cases_deduped": "analysis_bc/data/eval/reports/error_cases_deduped.jsonl",
     "pattern_report_raw": "analysis_bc/data/eval/reports/pattern_report_raw.json",
     "pattern_report_deduped": "analysis_bc/data/eval/reports/pattern_report_deduped.json"
-  },
-  "release_gate": {
-    "passed": true,
-    "checks": {
-      "fp_non_increase": true,
-      "precision_drop_lte_0_02": true,
-      "f1_non_decrease": true,
-      "recall_drop_lte_0_02": true
-    },
-    "delta_vs_baseline": {
-      "fp": 0,
-      "fn": 0,
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0
-    }
   }
 }

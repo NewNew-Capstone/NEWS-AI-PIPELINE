@@ -145,9 +145,11 @@ def _restore_variant(old: tuple[float, int, float]) -> None:
 def _evaluate_with_labels(rows: list[EvalRow], variant: Variant) -> tuple[dict, list]:
     old = _set_variant(variant)
     try:
-        # emotion 평가에서는 anonymous용 SBERT가 필요 없다.
-        # 네트워크/모델 캐시 상태와 무관하게 평가를 돌릴 수 있게 더미로 치환한다.
-        with patch("analysis_bc.tagger.span_tagger.SentenceTransformer", return_value=MagicMock()):
+        # 과거 구현(anonymous용 SBERT 포함)과 현재 구현(FastText-only) 모두 호환.
+        if hasattr(span_mod, "SentenceTransformer"):
+            with patch("analysis_bc.tagger.span_tagger.SentenceTransformer", return_value=MagicMock()):
+                tagger = SpanTagger()
+        else:
             tagger = SpanTagger()
         if not tagger._is_qdrant_healthy():
             raise RuntimeError("Qdrant 연결 실패: emotion 평가를 실행할 수 없습니다.")

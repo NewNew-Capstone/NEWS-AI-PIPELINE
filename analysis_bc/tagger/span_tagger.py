@@ -11,7 +11,9 @@ from qdrant_client.models import QueryRequest
 
 from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.config import (
+    EMOTION_SCORE_MARGIN,
     EMOTION_SIMILARITY_THRESHOLD,
+    EMOTION_TOP_K,
     FASTTEXT_MODEL_PATH,
     QDRANT_EMOTION_COLLECTION,
     QDRANT_HOST,
@@ -118,7 +120,7 @@ class SpanTagger:
             requests=[
                 QueryRequest(
                     query=vec.tolist(),
-                    limit=1,
+                    limit=EMOTION_TOP_K,
                     score_threshold=EMOTION_SIMILARITY_THRESHOLD,
                     with_payload=True,
                 )
@@ -130,6 +132,10 @@ class SpanTagger:
             hits = result.points
             if not hits:
                 continue
+            if len(hits) >= 2:
+                margin = hits[0].score - hits[1].score
+                if margin < EMOTION_SCORE_MARGIN:
+                    continue
             surface = sentence.sentence_text[token.start:token.start + token.len]
             logger.debug(
                 "emotion tag: id=%d surface=%s score=%.4f",
