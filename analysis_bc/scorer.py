@@ -1,27 +1,43 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.enums import SentenceLabelType
 from analysis_bc.schemas import SpanLabelDto
 
-_W_OPINION = 0.7
-_W_EMOTION = 0.3
+
+@dataclass
+class ScorerWeights:
+    w_opinion: float = 0.4
+    w_emotion: float = 0.3
+    w_fact:    float = 0.3
+    gap_evidence_high_threshold: float = 0.7
+    gap_evidence_mid_threshold:  float = 0.4
+
+    def __post_init__(self) -> None:
+        if abs(self.w_opinion + self.w_emotion + self.w_fact - 1.0) > 1e-6:
+            raise ValueError(
+                f"w_opinion + w_emotion + w_fact must equal 1.0, "
+                f"got {self.w_opinion + self.w_emotion + self.w_fact}"
+            )
+
 
 _EMPTY_RESULT: dict = {
-    "subjectivity_score": 0.0,
     "score_evidence": "",
-    "bias_type_scores": {
-        "OPINION": 0.0,
-        "EMOTIONAL": 0.0,
-    },
+    "bias_type_scores": {"OPINION": 0.0, "EMOTIONAL": 0.0, "FACT": 0.0},
     "opinion_score": 0.0,
     "emotion_score": 0.0,
+    "fact_ratio": 0.0,
     "overall_bias_score": 0.0,
 }
 
 
 class BiasScorer:
     """수식 기반 편향 점수 계산기 (LLM 로직 없음)."""
+
+    def __init__(self, weights: ScorerWeights = ScorerWeights()) -> None:
+        self.weights = weights
 
     def calculate(
         self,
@@ -33,21 +49,14 @@ class BiasScorer:
         if total == 0:
             return dict(_EMPTY_RESULT)
 
-        # ① opinion 문장 추출
+        # ① opinion / fact 문장 추출
         opinion_sentences = [s for s in classified if s.label == "opinion_like"]
-        opinion_count = len(opinion_sentences)
+        fact_count = len([s for s in classified if s.label == "fact_like"])
 
-        # ② raw_score
-        raw_score = sum(
-            s.confidence * self._get_position_weight(s.sentence_order, total)
-            for s in opinion_sentences
-        ) / total * 100
+        opinion_score = len(opinion_sentences) / total
+        fact_ratio    = fact_count / total
 
-        # ③ gap_weight → subjectivity_score
-        gap_weight = 1.0 + headline_body_gap * 0.3
-        subjectivity_score = round(min(raw_score * gap_weight, 100.0), 2)
-
-        # ④ 문장 기준 span 카운트 (감정 span이 1개 이상 있는 고유 문장 수)
+        # ② 감정 span이 1개 이상 있는 고유 문장 수
         emotional_sentence_count = len({
             s.content_sentence_id for s in span_labels
             if s.label_type in (
@@ -55,36 +64,38 @@ class BiasScorer:
                 SentenceLabelType.EMOTIONALLY_LOADED.value,
             )
         })
+        emotion_score = emotional_sentence_count / total
 
-        # ⑤ bias_type_scores (모두 문장 기준 → 0~1 보장)
-        bias_type_scores = {
-            "OPINION":   round(opinion_count            / total, 4),
-            "EMOTIONAL": round(emotional_sentence_count / total, 4),
-        }
-
-        # ⑥ score_evidence
-        score_evidence = self._build_evidence(
-            classified=classified,
-            opinion_sentences=opinion_sentences,
-            opinion_count=opinion_count,
-            emotional_sentence_count=emotional_sentence_count,
-            total=total,
-            headline_body_gap=headline_body_gap,
-        )
-
-        # 문장 기준이므로 클리핑 불필요 (이미 0~1)
+        # ③ overall_bias_score (Vargas 2023 / Garimella 2025 / Media Bias Detector 2024)
         overall_bias_score = round(
-            _W_OPINION * (subjectivity_score / 100)
-            + _W_EMOTION * bias_type_scores["EMOTIONAL"],
+            min(
+                self.weights.w_opinion * opinion_score
+                + self.weights.w_emotion * emotion_score
+                + self.weights.w_fact   * (1 - fact_ratio),
+                1.0,
+            ),
             4,
         )
 
+        score_evidence = self._build_evidence(
+            classified=classified,
+            opinion_sentences=opinion_sentences,
+            emotional_sentence_count=emotional_sentence_count,
+            total=total,
+            fact_ratio=fact_ratio,
+            headline_body_gap=headline_body_gap,
+        )
+
         return {
-            "subjectivity_score": subjectivity_score,
-            "score_evidence":     score_evidence,
-            "bias_type_scores":   bias_type_scores,
-            "opinion_score":      bias_type_scores["OPINION"],
-            "emotion_score":      bias_type_scores["EMOTIONAL"],
+            "score_evidence": score_evidence,
+            "bias_type_scores": {
+                "OPINION":   round(opinion_score, 4),
+                "EMOTIONAL": round(emotion_score, 4),
+                "FACT":      round(fact_ratio,    4),
+            },
+            "opinion_score":      round(opinion_score, 4),
+            "emotion_score":      round(emotion_score, 4),
+            "fact_ratio":         round(fact_ratio,    4),
             "overall_bias_score": overall_bias_score,
         }
 
@@ -92,49 +103,33 @@ class BiasScorer:
     # private helpers
     # ------------------------------------------------------------------
 
-    def _get_position_weight(self, order: int, total: int) -> float:
-        ratio = order / total
-        if ratio <= 0.33:
-            return 1.3
-        elif ratio <= 0.66:
-            return 1.0
-        else:
-            return 0.8
-
     def _build_evidence(
         self,
         classified: list[ClassifiedSentenceDto],
         opinion_sentences: list[ClassifiedSentenceDto],
-        opinion_count: int,
         emotional_sentence_count: int,
         total: int,
+        fact_ratio: float,
         headline_body_gap: float,
     ) -> str:
+        opinion_count = len(opinion_sentences)
         evidence: list[str] = []
 
-        # 빈도
         evidence.append(
             f"전체 문장 중 {round(opinion_count / total * 100)}%가 주관적 문장입니다."
         )
 
-        # 위치 — 앞 33% 구간에 OPINION이 절반 이상
-        front_opinion_count = sum(
-            1 for s in opinion_sentences
-            if s.sentence_order / total <= 0.33
-        )
-        if opinion_count > 0 and front_opinion_count / opinion_count >= 0.5:
-            evidence.append("주관적 표현이 도입부에 집중되어 있습니다.")
-
-        # span 근거 (문장 수 기준)
         if emotional_sentence_count > 0:
             evidence.append(f"감정적 표현이 {emotional_sentence_count}개 문장에서 감지되었습니다.")
 
-        # 제목-본문 갭
-        if headline_body_gap >= 0.7:
+        if fact_ratio < 0.3:
+            evidence.append("사실 기반 문장 비율이 낮습니다.")
+
+        if headline_body_gap >= self.weights.gap_evidence_high_threshold:
             evidence.append(
                 f"제목과 본문 내용의 차이가 큽니다. (갭 점수: {headline_body_gap:.2f})"
             )
-        elif headline_body_gap >= 0.4:
+        elif headline_body_gap >= self.weights.gap_evidence_mid_threshold:
             evidence.append(
                 f"제목과 본문 사이에 다소 차이가 있습니다. (갭 점수: {headline_body_gap:.2f})"
             )

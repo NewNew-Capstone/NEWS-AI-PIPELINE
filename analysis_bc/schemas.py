@@ -99,7 +99,7 @@ class BiasAnalysisResultDto(BaseModel):
     perspective_summary: str
     evidence_summary: str
     tone_label: str
-    subjectivity_score: float = 0.0
+    fact_ratio: float = 0.0
     score_evidence: str = ""
     bias_type_scores: dict[str, float] = Field(default_factory=dict)
     keywords: list[BiasAnalysisKeywordDto]
