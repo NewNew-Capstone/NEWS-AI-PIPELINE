@@ -1,0 +1,466 @@
+{"content_sentence_id": 1, "sentence_text": "이번 정책은 정말 최악의 선택이다.", "gold_emotion": true}
+{"content_sentence_id": 2, "sentence_text": "폭발적인 분노가 시민들 사이에서 번지고 있다.", "gold_emotion": true}
+{"content_sentence_id": 3, "sentence_text": "국회는 오늘 예산안을 처리했다.", "gold_emotion": false}
+{"content_sentence_id": 4, "sentence_text": "정부는 오늘 새로운 부동산 정책을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 5, "sentence_text": "그의 발언은 매우 충격적이었다.", "gold_emotion": true}
+{"content_sentence_id": 6, "sentence_text": "해당 법안은 내년 1월부터 시행된다.", "gold_emotion": false}
+{"content_sentence_id": 7, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 8, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 9, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 10, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 11, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 12, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 13, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 14, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 15, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 16, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 17, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 18, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 19, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 20, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 21, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 22, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 23, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 24, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 25, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 26, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 27, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 28, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 29, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 30, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 31, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 32, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 33, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 34, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 35, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 36, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 37, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 38, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 39, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 40, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 41, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 42, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 43, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 44, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 45, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 46, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 47, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 48, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 49, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 50, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 51, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 52, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 53, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 54, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 55, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 56, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 57, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 58, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 59, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 60, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 61, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 62, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 63, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 64, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 65, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 66, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 67, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 68, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 69, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 70, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 71, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 72, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 73, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 74, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 75, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 76, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 77, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 78, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 79, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 80, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 81, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 82, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 83, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 84, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 85, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 86, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 87, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 88, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 89, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 90, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 91, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 92, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 93, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 94, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 95, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 96, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 97, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 98, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 99, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 100, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 101, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 102, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 103, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 104, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 105, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 106, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 107, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 108, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 109, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 110, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 111, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 112, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 113, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 114, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 115, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 116, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 117, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 118, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 119, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 120, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 121, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 122, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 123, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 124, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 125, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 126, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 127, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 128, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 129, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 130, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 131, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 132, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 133, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 134, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 135, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 136, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 137, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 138, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 139, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 140, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 141, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 142, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 143, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 144, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 145, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 146, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 147, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 148, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 149, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 150, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 151, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 152, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 153, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 154, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 155, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 156, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 157, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 158, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 159, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 160, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 161, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 162, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 163, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 164, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 165, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 166, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 167, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 168, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 169, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 170, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 171, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 172, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 173, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 174, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 175, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 176, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 177, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 178, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 179, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 180, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 181, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 182, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 183, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 184, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 185, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 186, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 187, "sentence_text": "이번 발표는 시민들에게 큰 분노를 불러일으켰다.", "gold_emotion": true}
+{"content_sentence_id": 188, "sentence_text": "정부는 다음 달부터 시범 사업을 시행할 계획이다.", "gold_emotion": false}
+{"content_sentence_id": 189, "sentence_text": "현장 상황은 참담했고 주민들은 공포에 떨었다.", "gold_emotion": true}
+{"content_sentence_id": 190, "sentence_text": "통계청은 3분기 고용 동향 자료를 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 191, "sentence_text": "피해자 가족은 판결에 깊은 절망감을 드러냈다.", "gold_emotion": true}
+{"content_sentence_id": 192, "sentence_text": "교육부는 내년도 입시 기본계획을 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 193, "sentence_text": "시민들은 해당 발언을 모욕적으로 느꼈다고 말했다.", "gold_emotion": true}
+{"content_sentence_id": 194, "sentence_text": "보건당국은 예방접종 권고 기준을 일부 조정했다.", "gold_emotion": false}
+{"content_sentence_id": 195, "sentence_text": "참사 소식에 지역사회가 큰 충격에 빠졌다.", "gold_emotion": true}
+{"content_sentence_id": 196, "sentence_text": "위원회는 오늘 회의에서 세부 시행령을 논의했다.", "gold_emotion": false}
+{"content_sentence_id": 197, "sentence_text": "이번 결정은 당사자들에게 심각한 상실감을 안겼다.", "gold_emotion": true}
+{"content_sentence_id": 198, "sentence_text": "기상청은 주말 강수 확률 전망을 발표했다.", "gold_emotion": false}
+{"content_sentence_id": 199, "sentence_text": "논평은 상대 진영을 노골적으로 비난하는 어조였다.", "gold_emotion": true}
+{"content_sentence_id": 200, "sentence_text": "경찰은 사고 경위를 확인하기 위해 조사를 진행 중이다.", "gold_emotion": false}
+{"content_sentence_id": 201, "sentence_text": "이번 조치는 약자에게 잔인하다는 비판이 제기됐다.", "gold_emotion": true}
+{"content_sentence_id": 202, "sentence_text": "국토부는 신규 노선 타당성 조사 결과를 공유했다.", "gold_emotion": false}
+{"content_sentence_id": 203, "sentence_text": "사건 이후 주민들은 깊은 트라우마를 겪고 있다.", "gold_emotion": true}
+{"content_sentence_id": 204, "sentence_text": "중앙선관위는 투표소 운영 지침을 재안내했다.", "gold_emotion": false}
+{"content_sentence_id": 205, "sentence_text": "논쟁 과정에서 혐오 표현이 반복돼 충격을 줬다.", "gold_emotion": true}
+{"content_sentence_id": 206, "sentence_text": "관계기관은 합동 점검 일정을 다음 주로 확정했다.", "gold_emotion": false}
+{"content_sentence_id": 207, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 208, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 209, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 210, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 211, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 212, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 213, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 214, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 215, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 216, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 217, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 218, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 219, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 220, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 221, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 222, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 223, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 224, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 225, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 226, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 227, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 228, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 229, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 230, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 231, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 232, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 233, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 234, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 235, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 236, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 237, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 238, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 239, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 240, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 241, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 242, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 243, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 244, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 245, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 246, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 247, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 248, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 249, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 250, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 251, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 252, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 253, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 254, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 255, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 256, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 257, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 258, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 259, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 260, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 261, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 262, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 263, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 264, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 265, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 266, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 267, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 268, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 269, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 270, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 271, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 272, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 273, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 274, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 275, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 276, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 277, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 278, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 279, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 280, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 281, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 282, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 283, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 284, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 285, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 286, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 287, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 288, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 289, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 290, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 291, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 292, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 293, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 294, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 295, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 296, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 297, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 298, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 299, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 300, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 301, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 302, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 303, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 304, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 305, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 306, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 307, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 308, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 309, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 310, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 311, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 312, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 313, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 314, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 315, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 316, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 317, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 318, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 319, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 320, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 321, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 322, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 323, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 324, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 325, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 326, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 327, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 328, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 329, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 330, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 331, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 332, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 333, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 334, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 335, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 336, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 337, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 338, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 339, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 340, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 341, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 342, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 343, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 344, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 345, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 346, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 347, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 348, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 349, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 350, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 351, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 352, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 353, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 354, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 355, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 356, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 357, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 358, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 359, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 360, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 361, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 362, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 363, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 364, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 365, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 366, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 367, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 368, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 369, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 370, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 371, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 372, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 373, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 374, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 375, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 376, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 377, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 378, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 379, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 380, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 381, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 382, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 383, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 384, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 385, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 386, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 387, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 388, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 389, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 390, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 391, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 392, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 393, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 394, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 395, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 396, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 397, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 398, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 399, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 400, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 401, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 402, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 403, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 404, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 405, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 406, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 407, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 408, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 409, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 410, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 411, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 412, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 413, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 414, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 415, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 416, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 417, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 418, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 419, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 420, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 421, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 422, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 423, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 424, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 425, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 426, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 427, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 428, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 429, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 430, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 431, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 432, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 433, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 434, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 435, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 436, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 437, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 438, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 439, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 440, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 441, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 442, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 443, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 444, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 445, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 446, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 447, "sentence_text": "방금 진행자 기준으로 보면 아 진짜 너무 화난다 이건 선 넘었어.", "gold_emotion": true}
+{"content_sentence_id": 448, "sentence_text": "우선 출연자 안내로는 오늘 영상은 이 부분까지 정리하겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 449, "sentence_text": "이번 시청자 기준으로 보면 댓글 분위기가 완전 분노로 뒤집혔네.", "gold_emotion": true}
+{"content_sentence_id": 450, "sentence_text": "정리하면 커뮤니티 안내로는 시간 관계상 핵심만 빠르게 말씀드릴게요.", "gold_emotion": false}
+{"content_sentence_id": 451, "sentence_text": "조금 전 채팅창 기준으로 보면 피해자 입장에선 정말 절망감이 클 것 같다.", "gold_emotion": true}
+{"content_sentence_id": 452, "sentence_text": "기본적으로 현장 안내로는 현장 연결은 잠시 뒤에 다시 이어가겠습니다.", "gold_emotion": false}
+{"content_sentence_id": 453, "sentence_text": "계속 패널 기준으로 보면 이 결과는 시청자들한테 충격이 너무 크다.", "gold_emotion": true}
+{"content_sentence_id": 454, "sentence_text": "시스템상 당사자 안내로는 이 장면은 자료 화면으로 대체된 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 455, "sentence_text": "마침내 관계자 기준으로 보면 이건 진짜 분개할 만한 상황이 맞다.", "gold_emotion": true}
+{"content_sentence_id": 456, "sentence_text": "절차상 제작진 안내로는 자세한 일정은 공지 게시판에서 확인 가능합니다.", "gold_emotion": false}
+{"content_sentence_id": 457, "sentence_text": "방금 진행자 기준으로 보면 말투가 너무 공격적이라 거부감이 든다.", "gold_emotion": true}
+{"content_sentence_id": 458, "sentence_text": "우선 출연자 안내로는 관련 기관 입장은 오후 브리핑에서 나옵니다.", "gold_emotion": false}
+{"content_sentence_id": 459, "sentence_text": "이번 시청자 기준으로 보면 계속 같은 실수 반복하니까 짜증이 폭발한다.", "gold_emotion": true}
+{"content_sentence_id": 460, "sentence_text": "정리하면 커뮤니티 안내로는 앞서 언급한 수치는 잠정 집계 값입니다.", "gold_emotion": false}
+{"content_sentence_id": 461, "sentence_text": "조금 전 채팅창 기준으로 보면 방금 발언은 혐오를 부추기는 느낌이다.", "gold_emotion": true}
+{"content_sentence_id": 462, "sentence_text": "기본적으로 현장 안내로는 현재까지 추가 공지는 없는 상태입니다.", "gold_emotion": false}
+{"content_sentence_id": 463, "sentence_text": "계속 패널 기준으로 보면 이 정도면 공감보다 분노가 먼저 올라온다.", "gold_emotion": true}
+{"content_sentence_id": 464, "sentence_text": "시스템상 당사자 안내로는 영상 설명란에 참고 링크를 남겨두었습니다.", "gold_emotion": false}
+{"content_sentence_id": 465, "sentence_text": "마침내 관계자 기준으로 보면 오늘 내용은 불쾌감이 너무 강하다.", "gold_emotion": true}
+{"content_sentence_id": 466, "sentence_text": "절차상 제작진 안내로는 다음 업데이트는 주말 라이브에서 공유하겠습니다.", "gold_emotion": false}

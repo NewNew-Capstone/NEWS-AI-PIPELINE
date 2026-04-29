@@ -210,3 +210,6 @@ __marimo__/
 analysis_bc/models/
 analysis_bc/data/mrc_news/
 analysis_bc/data/anonymous_patterns.json
+
+# Local runtime/request logs
+logs/
