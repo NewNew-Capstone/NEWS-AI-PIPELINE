@@ -51,45 +51,59 @@ class TestBiasScorer:
 
     def test_empty_input(self) -> None:
         result = self.scorer.calculate(classified=[], span_labels=[], headline_body_gap=0.0)
-        assert result["subjectivity_score"] == 0.0
+        assert result["opinion_score"] == 0.0
+        assert result["emotion_score"] == 0.0
+        assert result["fact_ratio"] == 0.0
         assert result["overall_bias_score"] == 0.0
         assert result["score_evidence"] == ""
 
     def test_all_fact(self) -> None:
         classified = [_make_classified(i, label="fact_like", confidence=0.99) for i in range(1, 6)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
-        assert result["subjectivity_score"] == 0.0
         assert result["opinion_score"] == 0.0
+        assert result["fact_ratio"] == 1.0
+        assert result["overall_bias_score"] == pytest.approx(
+            0.4 * 0.0 + 0.3 * 0.0 + 0.3 * (1 - 1.0), abs=1e-4
+        )
 
     def test_all_opinion_positive_score(self) -> None:
         classified = [_make_classified(i, label="opinion_like", confidence=1.0) for i in range(1, 6)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
-        assert result["subjectivity_score"] > 0.0
+        assert result["opinion_score"] > 0.0
         assert result["overall_bias_score"] > 0.0
 
-    def test_position_weight_front_heavy(self) -> None:
-        # 10문장 중 앞 3개(≤33%)가 전부 opinion → "도입부" evidence 포함
-        classified = (
-            [_make_classified(i, label="opinion_like", confidence=0.9) for i in range(1, 4)]
-            + [_make_classified(i, label="fact_like", confidence=0.9) for i in range(4, 11)]
-        )
-        result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
-        assert "도입부" in result["score_evidence"]
-
-    def test_gap_weight_amplifies_score(self) -> None:
-        classified = [_make_classified(i, label="opinion_like", confidence=0.5) for i in range(1, 6)]
-        score_no_gap = self.scorer.calculate(
+    def test_low_fact_ratio_evidence(self) -> None:
+        # opinion 문장만 있으면 fact_ratio=0.0 → "사실 기반 문장 비율이 낮습니다." 포함
+        classified = [
+            _make_classified(i, label="opinion_like", confidence=0.9)
+            for i in range(1, 6)
+        ]
+        result = self.scorer.calculate(
             classified=classified, span_labels=[], headline_body_gap=0.0
-        )["subjectivity_score"]
-        score_with_gap = self.scorer.calculate(
-            classified=classified, span_labels=[], headline_body_gap=1.0
-        )["subjectivity_score"]
-        assert score_with_gap > score_no_gap
+        )
+        assert "사실 기반" in result["score_evidence"]
+
+    def test_opinion_ratio_increases_score(self) -> None:
+        classified_all_opinion = [
+            _make_classified(i, label="opinion_like", confidence=0.9)
+            for i in range(1, 6)
+        ]
+        classified_half_opinion = (
+            [_make_classified(i, label="opinion_like", confidence=0.9) for i in range(1, 4)]
+            + [_make_classified(i, label="fact_like", confidence=0.9) for i in range(4, 6)]
+        )
+        score_all = self.scorer.calculate(
+            classified=classified_all_opinion, span_labels=[], headline_body_gap=0.0
+        )["overall_bias_score"]
+        score_half = self.scorer.calculate(
+            classified=classified_half_opinion, span_labels=[], headline_body_gap=0.0
+        )["overall_bias_score"]
+        assert score_all > score_half
 
     def test_bias_type_scores_keys(self) -> None:
         classified = [_make_classified(1)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.0)
-        assert set(result["bias_type_scores"].keys()) == {"OPINION", "EMOTIONAL"}
+        assert set(result["bias_type_scores"].keys()) == {"OPINION", "EMOTIONAL", "FACT"}
 
     def test_score_evidence_emotional(self) -> None:
         classified = [_make_classified(1)]
@@ -98,17 +112,27 @@ class TestBiasScorer:
         assert "감정적 표현" in result["score_evidence"]
         assert result["emotion_score"] > 0.0
 
-    def test_subjectivity_score_max_100(self) -> None:
-        # confidence=1.0 × 전부 앞쪽 position_weight(1.3) × gap_weight(1.3) → 100 초과 불가
-        classified = [_make_classified(i, label="opinion_like", confidence=1.0) for i in range(1, 11)]
-        result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=1.0)
-        assert result["subjectivity_score"] <= 100.0
+    def test_overall_bias_score_max_1(self) -> None:
+        classified = [
+            _make_classified(i, label="opinion_like", confidence=1.0)
+            for i in range(1, 11)
+        ]
+        result = self.scorer.calculate(
+            classified=classified, span_labels=[], headline_body_gap=1.0
+        )
+        assert result["overall_bias_score"] <= 1.0
 
     def test_overall_bias_score_weighted_no_spans(self) -> None:
-        # span 없을 때: overall = 0.6 * (subjectivity/100)
+        # span 없음 → emotion=0, fact_ratio=0
+        # overall = 0.4 * opinion + 0.3 * 0 + 0.3 * (1 - 0)
         classified = [_make_classified(i) for i in range(1, 6)]
         result = self.scorer.calculate(classified=classified, span_labels=[], headline_body_gap=0.5)
-        expected = pytest.approx(0.6 * result["subjectivity_score"] / 100, abs=1e-4)
+        expected = pytest.approx(
+            0.4 * result["opinion_score"]
+            + 0.3 * result["emotion_score"]
+            + 0.3 * (1 - result["fact_ratio"]),
+            abs=1e-4,
+        )
         assert result["overall_bias_score"] == expected
 
     def test_overall_includes_emotion(self) -> None:

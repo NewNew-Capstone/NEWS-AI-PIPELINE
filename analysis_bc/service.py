@@ -119,7 +119,7 @@ class AnalysisService:
             f"  - opinion_score       : {scores['opinion_score']:.4f}\n"
             f"  - emotion_score       : {scores['emotion_score']:.4f}\n"
             f"  - headline_body_gap   : {title_body_gap:.4f}\n"
-            f"  - subjectivity_score  : {scores['subjectivity_score']:.4f}\n"
+            f"  - fact_ratio          : {scores['fact_ratio']:.4f}\n"
             f"  - tone_label          : {summary['tone_label']}\n"
             f"  - keywords            : {len(keywords)}개\n"
             f"  - sentence_labels     : {len(sentence_labels)}개\n"
@@ -136,7 +136,7 @@ class AnalysisService:
             opinion_score=scores["opinion_score"],
             emotion_score=scores["emotion_score"],
             headline_body_gap_score=title_body_gap,
-            subjectivity_score=scores["subjectivity_score"],
+            fact_ratio=scores["fact_ratio"],
             score_evidence=scores["score_evidence"],
             bias_type_scores=scores["bias_type_scores"],
             summary_text=summary["summary_text"],
