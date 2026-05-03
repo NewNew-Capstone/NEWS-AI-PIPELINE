@@ -20,5 +20,6 @@ sentence-transformers
 qdrant-client
 redis
 fasttext-wheel
-anthropi
+anthropic
 deep-translator
+httpx

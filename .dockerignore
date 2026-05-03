@@ -1,0 +1,9 @@
+.env
+analysis_bc/data/*.bin
+__pycache__/
+**/__pycache__/
+.git/
+tests/
+*.md
+.claude/
+scripts/
