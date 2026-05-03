@@ -12,34 +12,48 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from qdrant_client import QdrantClient
-from qdrant_client.http.exceptions import UnexpectedResponse
 
 from analysis_bc.config import (
-    QDRANT_ANONYMOUS_COLLECTION,
     QDRANT_EMOTION_COLLECTION,
     QDRANT_HOST,
     QDRANT_PORT,
 )
 
-COLLECTIONS = [QDRANT_EMOTION_COLLECTION, QDRANT_ANONYMOUS_COLLECTION]
+REQUIRED_COLLECTIONS = [QDRANT_EMOTION_COLLECTION]
+OPTIONAL_COLLECTIONS = ["anonymous_patterns"]
 
 
 def check(client: QdrantClient) -> None:
     existing = {c.name for c in client.get_collections().collections}
 
-    for name in COLLECTIONS:
+    for name in REQUIRED_COLLECTIONS:
         if name not in existing:
             print(f"[MISSING] {name} — 컬렉션 없음 (init_qdrant.py 먼저 실행)")
             continue
+        _print_collection(client, name)
 
-        info = client.get_collection(name)
-        count = info.points_count
-        vector_size = info.config.params.vectors.size
-        print(f"\n[OK] {name}: {count} points, vector_size={vector_size}")
+    for name in OPTIONAL_COLLECTIONS:
+        if name in existing:
+            _print_collection(client, name, optional=True)
+        else:
+            print(f"\n[SKIP] {name}: optional collection not present")
 
-        results, _ = client.scroll(collection_name=name, limit=1, with_payload=True)
-        if results:
-            print(f"  sample payload: {json.dumps(results[0].payload, ensure_ascii=False)}")
+
+def _print_collection(
+    client: QdrantClient,
+    name: str,
+    *,
+    optional: bool = False,
+) -> None:
+    info = client.get_collection(name)
+    count = info.points_count
+    vector_size = info.config.params.vectors.size
+    prefix = "OK/OPTIONAL" if optional else "OK"
+    print(f"\n[{prefix}] {name}: {count} points, vector_size={vector_size}")
+
+    results, _ = client.scroll(collection_name=name, limit=1, with_payload=True)
+    if results:
+        print(f"  sample payload: {json.dumps(results[0].payload, ensure_ascii=False)}")
 
 
 def main() -> None:

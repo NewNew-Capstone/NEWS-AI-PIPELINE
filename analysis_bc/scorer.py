@@ -12,6 +12,11 @@ class ScorerWeights:
     w_opinion: float = 0.4
     w_emotion: float = 0.3
     w_fact:    float = 0.3
+    emotion_position_weight_front: float = 1.3
+    emotion_position_weight_mid:   float = 1.0
+    emotion_position_weight_back:  float = 0.8
+    emotion_position_front_threshold: float = 0.33
+    emotion_position_mid_threshold:   float = 0.66
     gap_evidence_high_threshold: float = 0.7
     gap_evidence_mid_threshold:  float = 0.4
 
@@ -64,7 +69,17 @@ class BiasScorer:
                 SentenceLabelType.EMOTIONALLY_LOADED.value,
             )
         })
-        emotion_score = emotional_sentence_count / total
+        emotion_span_count = len([
+            s for s in span_labels
+            if s.label_type in (
+                SentenceLabelType.EMOTIONALLY_LOADED,
+                SentenceLabelType.EMOTIONALLY_LOADED.value,
+            )
+        ])
+        emotion_score = self._calculate_emotion_score(
+            classified=classified,
+            span_labels=span_labels,
+        )
 
         # ③ overall_bias_score (Vargas 2023 / Garimella 2025 / Media Bias Detector 2024)
         overall_bias_score = round(
@@ -81,6 +96,8 @@ class BiasScorer:
             classified=classified,
             opinion_sentences=opinion_sentences,
             emotional_sentence_count=emotional_sentence_count,
+            emotion_span_count=emotion_span_count,
+            emotion_score=emotion_score,
             total=total,
             fact_ratio=fact_ratio,
             headline_body_gap=headline_body_gap,
@@ -103,11 +120,60 @@ class BiasScorer:
     # private helpers
     # ------------------------------------------------------------------
 
+    def _calculate_emotion_score(
+        self,
+        classified: list[ClassifiedSentenceDto],
+        span_labels: list[SpanLabelDto],
+    ) -> float:
+        total = len(classified)
+        if total == 0:
+            return 0.0
+
+        emotion_by_sentence: dict[int, float] = {}
+        for span in span_labels:
+            if span.label_type not in (
+                SentenceLabelType.EMOTIONALLY_LOADED,
+                SentenceLabelType.EMOTIONALLY_LOADED.value,
+            ):
+                continue
+
+            emotion_by_sentence[span.content_sentence_id] = min(
+                emotion_by_sentence.get(span.content_sentence_id, 0.0) + span.score,
+                1.0,
+            )
+
+        if not emotion_by_sentence:
+            return 0.0
+
+        weighted_sum = 0.0
+        for index, sentence in enumerate(classified):
+            intensity = emotion_by_sentence.get(sentence.content_sentence_id, 0.0)
+            if intensity <= 0:
+                continue
+
+            weighted_sum += intensity * self._position_weight(index, total)
+
+        return min(weighted_sum / total, 1.0)
+
+    def _position_weight(self, index: int, total: int) -> float:
+        if total <= 1:
+            position_ratio = 0.0
+        else:
+            position_ratio = index / total
+
+        if position_ratio < self.weights.emotion_position_front_threshold:
+            return self.weights.emotion_position_weight_front
+        if position_ratio < self.weights.emotion_position_mid_threshold:
+            return self.weights.emotion_position_weight_mid
+        return self.weights.emotion_position_weight_back
+
     def _build_evidence(
         self,
         classified: list[ClassifiedSentenceDto],
         opinion_sentences: list[ClassifiedSentenceDto],
         emotional_sentence_count: int,
+        emotion_span_count: int,
+        emotion_score: float,
         total: int,
         fact_ratio: float,
         headline_body_gap: float,
@@ -120,7 +186,12 @@ class BiasScorer:
         )
 
         if emotional_sentence_count > 0:
-            evidence.append(f"감정적 표현이 {emotional_sentence_count}개 문장에서 감지되었습니다.")
+            evidence.append(
+                f"감정적 표현 {emotion_span_count}건이 "
+                f"{emotional_sentence_count}개 문장에서 감지되었습니다."
+            )
+            if emotion_score >= 0.3:
+                evidence.append(f"감정 표현 강도가 높습니다. (감정 점수: {emotion_score:.2f})")
 
         if fact_ratio < 0.3:
             evidence.append("사실 기반 문장 비율이 낮습니다.")

@@ -4,6 +4,7 @@
     python scripts/tune_bias_weights_ab.py full
     python scripts/tune_bias_weights_ab.py snapshot
     python scripts/tune_bias_weights_ab.py snapshot --grid-divisions 20
+    python scripts/tune_bias_weights_ab.py full --limit-per-dataset 5 --snapshot-path /tmp/ab_smoke.json
 
 `full`은 실제 A/B 원문을 서비스와 같은 점수 계산 전 파이프라인에 태운 뒤,
 재사용 가능한 중간 결과를 snapshot 파일로 저장한다.
@@ -64,17 +65,81 @@ def _write_json(path: Path, data: Any) -> None:
         f.write("\n")
 
 
-def _load_articles() -> list[dict[str, Any]]:
+def _load_articles(limit_per_dataset: int | None = None) -> list[dict[str, Any]]:
     # A는 "편향 점수가 높아야 하는" 사설/의견성 극단 케이스,
     # B는 "편향 점수가 낮아야 하는" 정책/공적 자막 극단 케이스로 본다.
     articles: list[dict[str, Any]] = []
     for dataset, filename in (("A", "A.json"), ("B", "B.json")):
-        for article in _load_json(DATA_DIR / filename):
+        dataset_articles = _load_json(DATA_DIR / filename)
+        if limit_per_dataset is not None:
+            dataset_articles = dataset_articles[:limit_per_dataset]
+        for article in dataset_articles:
             articles.append({"dataset": dataset, **article})
     return articles
 
 
-def _build_snapshot() -> dict[str, Any]:
+def _ensure_qdrant_ready(span_tagger: Any) -> None:
+    """Fail fast so full snapshots are not silently built with emotion=0."""
+    if span_tagger._is_qdrant_healthy():
+        return
+
+    raise RuntimeError(
+        "Qdrant health check failed. `full` mode would create a snapshot with "
+        "empty emotion spans, so it was stopped. Start Qdrant and initialize "
+        "`emotion_words` first: `docker compose up -d qdrant` then "
+        "`.venv/bin/python scripts/init_qdrant.py`."
+    )
+
+
+def _record_emotion_score(record: dict[str, Any]) -> float:
+    from analysis_bc.classifier import ClassifiedSentenceDto
+    from analysis_bc.schemas import SpanLabelDto
+    from analysis_bc.scorer import BiasScorer
+
+    classified = [ClassifiedSentenceDto(**item) for item in record["classified"]]
+    span_labels = [SpanLabelDto(**item) for item in record["span_labels"]]
+    return BiasScorer().calculate(
+        classified=classified,
+        span_labels=span_labels,
+        headline_body_gap=record["headline_body_gap"],
+    )["emotion_score"]
+
+
+def _print_emotion_diagnostics(snapshot: dict[str, Any]) -> None:
+    records = snapshot.get("records", [])
+    total_spans = sum(len(record.get("span_labels", [])) for record in records)
+
+    print("\nemotion diagnostics")
+    print("-" * 72)
+    print(f"records={len(records)} total_spans={total_spans}")
+
+    for dataset in ("A", "B"):
+        dataset_records = [
+            record for record in records
+            if record.get("dataset") == dataset
+        ]
+        if not dataset_records:
+            continue
+
+        span_count = sum(
+            len(record.get("span_labels", []))
+            for record in dataset_records
+        )
+        avg_emotion = sum(
+            _record_emotion_score(record)
+            for record in dataset_records
+        ) / len(dataset_records)
+        print(
+            f"{dataset}: records={len(dataset_records)} "
+            f"spans={span_count} avg_emotion_score={avg_emotion:.4f}"
+        )
+
+
+def _build_snapshot(
+    *,
+    snapshot_path: Path = SNAPSHOT_PATH,
+    limit_per_dataset: int | None = None,
+) -> dict[str, Any]:
     """비용이 큰 점수 계산 전 파이프라인을 한 번 실행하고 중간 결과를 저장한다."""
     # full 모드는 실제 서비스와 같은 계산 경로를 탄다.
     # 모델/Qdrant/임베딩 로딩 비용이 크므로, 결과를 snapshot으로 남겨
@@ -86,10 +151,11 @@ def _build_snapshot() -> dict[str, Any]:
 
     classifier = FactOpinionClassifier(model_path="analysis_bc/models/best_model")
     span_tagger = SpanTagger()
+    _ensure_qdrant_ready(span_tagger)
     gap_calculator = TitleBodyGapCalculator()
 
     records: list[dict[str, Any]] = []
-    for article in _load_articles():
+    for article in _load_articles(limit_per_dataset):
         language = article["language"]
 
         # 1. raw_text를 서비스의 /analyze/raw 경로처럼 문장 단위로 나눈다.
@@ -135,23 +201,25 @@ def _build_snapshot() -> dict[str, Any]:
         "source": {
             "a_path": str(DATA_DIR / "A.json"),
             "b_path": str(DATA_DIR / "B.json"),
+            "limit_per_dataset": limit_per_dataset,
         },
         "records": records,
     }
-    _write_json(SNAPSHOT_PATH, snapshot)
-    print(f"\n[snapshot] wrote {SNAPSHOT_PATH}")
+    _write_json(snapshot_path, snapshot)
+    print(f"\n[snapshot] wrote {snapshot_path}")
+    _print_emotion_diagnostics(snapshot)
     return snapshot
 
 
-def _load_snapshot() -> dict[str, Any]:
+def _load_snapshot(snapshot_path: Path = SNAPSHOT_PATH) -> dict[str, Any]:
     # snapshot 모드는 full 모드가 저장한 중간 결과를 전제로 한다.
     # 파일이 없으면 먼저 full을 실행해야 한다.
-    if not SNAPSHOT_PATH.exists():
+    if not snapshot_path.exists():
         raise FileNotFoundError(
-            f"Snapshot not found: {SNAPSHOT_PATH}\n"
+            f"Snapshot not found: {snapshot_path}\n"
             "먼저 `python scripts/tune_bias_weights_ab.py full`을 실행해 주세요."
         )
-    return _load_json(SNAPSHOT_PATH)
+    return _load_json(snapshot_path)
 
 
 def _default_variants() -> list[WeightVariant]:
@@ -310,6 +378,18 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="기사별 상세 표를 생략하고 요약 표만 출력합니다.",
     )
+    parser.add_argument(
+        "--snapshot-path",
+        type=Path,
+        default=SNAPSHOT_PATH,
+        help="읽거나 쓸 snapshot 경로입니다. 기본값은 analysis_bc/data/eval/ab_pipeline_snapshot.json입니다.",
+    )
+    parser.add_argument(
+        "--limit-per-dataset",
+        type=int,
+        default=None,
+        help="full 모드에서 A/B 각 데이터셋의 앞 N건만 실행합니다. 로컬 smoke test용입니다.",
+    )
     return parser.parse_args()
 
 
@@ -318,7 +398,19 @@ def main() -> None:
 
     # full: 실제 파이프라인을 돌려 snapshot을 새로 만든다.
     # snapshot: 저장된 중간 결과를 읽어 scorer 가중치만 다시 계산한다.
-    snapshot = _build_snapshot() if args.mode == "full" else _load_snapshot()
+    if args.limit_per_dataset is not None and args.limit_per_dataset <= 0:
+        raise ValueError("--limit-per-dataset must be positive")
+
+    snapshot = (
+        _build_snapshot(
+            snapshot_path=args.snapshot_path,
+            limit_per_dataset=args.limit_per_dataset,
+        )
+        if args.mode == "full"
+        else _load_snapshot(args.snapshot_path)
+    )
+    if args.mode == "snapshot":
+        _print_emotion_diagnostics(snapshot)
 
     # --grid가 있으면 촘촘한 모든 조합을, 없으면 대표 후보들만 비교한다.
     results = _evaluate(snapshot, _variants(args))
