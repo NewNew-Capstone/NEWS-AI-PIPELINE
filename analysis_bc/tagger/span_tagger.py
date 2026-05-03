@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 
 import fasttext
+import httpx
 import numpy as np
 from kiwipiepy import Kiwi
 from qdrant_client import QdrantClient
@@ -21,6 +23,8 @@ from analysis_bc.config import (
 )
 from analysis_bc.enums import SentenceLabelType
 from analysis_bc.schemas import SpanLabelDto
+
+_FASTTEXT_SERVER_URL: str = os.getenv("FASTTEXT_SERVER_URL", "")
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +48,16 @@ class SpanTagger:
 
     def __init__(self) -> None:
         self.kiwi = Kiwi()
-        self.ft_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
         self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=3.0)
         self._qdrant_healthy: bool = False
         self._health_checked_at: float = 0.0
+
+        if _FASTTEXT_SERVER_URL:
+            self.ft_model = None
+            self._ft_server_url = _FASTTEXT_SERVER_URL
+        else:
+            self.ft_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
+            self._ft_server_url = ""
 
     def _is_qdrant_healthy(self) -> bool:
         now = time.monotonic()
@@ -105,10 +115,24 @@ class SpanTagger:
 
         # FastText embed + 단위 벡터 정규화 (init_qdrant와 동일하게)
         # token.form(어간) 대신 원문 표면형 사용 → init_qdrant의 word 필드와 형태 일치
+        surfaces = [
+            sentence.sentence_text[t.start:t.start + t.len]
+            for t in valid_tokens
+        ]
+
+        if self.ft_model is not None:
+            raw_vecs = [self.ft_model.get_word_vector(s) for s in surfaces]
+        else:
+            resp = httpx.post(
+                f"{self._ft_server_url}/embed",
+                json={"words": surfaces},
+                timeout=10.0,
+            )
+            resp.raise_for_status()
+            raw_vecs = [np.array(v) for v in resp.json()["vectors"]]
+
         embeddings = []
-        for t in valid_tokens:
-            surface = sentence.sentence_text[t.start:t.start + t.len]
-            vec = self.ft_model.get_word_vector(surface)
+        for vec in raw_vecs:
             norm = np.linalg.norm(vec)
             if norm > 0:
                 vec = vec / norm
