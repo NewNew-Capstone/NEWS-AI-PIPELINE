@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ML model weights
+analysis_bc/models/
+analysis_bc/data/*.bin
+analysis_bc/data/mrc_news/
+analysis_bc/data/anonymous_patterns.json
+
+# Local runtime/request logs
+logs/

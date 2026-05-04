@@ -1,0 +1,39 @@
+from enum import Enum
+
+
+class JobType(str, Enum):
+    TRANSCRIPT_FETCH = "TRANSCRIPT_FETCH"
+    VIDEO_SUMMARY = "VIDEO_SUMMARY"
+    VIDEO_BIAS_ANALYSIS = "VIDEO_BIAS_ANALYSIS"
+    ISSUE_COMPARE_ANALYSIS = "ISSUE_COMPARE_ANALYSIS"
+
+
+class JobStatus(str, Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+
+
+class TargetType(str, Enum):
+    YOUTUBE_VIDEO = "YOUTUBE_VIDEO"
+    ISSUE_CLUSTER = "ISSUE_CLUSTER"
+    ISSUE_CLUSTER_VIDEO = "ISSUE_CLUSTER_VIDEO"
+
+
+class SentenceLabelType(str, Enum):
+    FACT_LIKE = "FACT_LIKE"
+    OPINION_LIKE = "OPINION_LIKE"
+    EMOTIONALLY_LOADED = "EMOTIONALLY_LOADED"
+
+
+class EvidenceType(str, Enum):
+    OPINION = "OPINION"
+    EMOTION = "EMOTION"
+    SPECULATION = "SPECULATION"
+
+
+class BiasKeywordType(str, Enum):
+    EMOTION = "EMOTION"
+    FRAME = "FRAME"
+    TOPIC = "TOPIC"
