@@ -31,13 +31,14 @@ def _make_classified(
 def _make_span(
     label_type: SentenceLabelType,
     content_sentence_id: int = 1,
+    score: float = 0.9,
 ) -> SpanLabelDto:
     return SpanLabelDto(
         content_sentence_id=content_sentence_id,
         start_offset=0,
         end_offset=5,
         label_type=label_type,
-        score=0.9,
+        score=score,
     )
 
 
@@ -142,6 +143,47 @@ class TestBiasScorer:
         span_labels = [_make_span(SentenceLabelType.EMOTIONALLY_LOADED, i) for i in range(1, 6)]
         result_with_span = self.scorer.calculate(classified=classified, span_labels=span_labels, headline_body_gap=0.0)
         assert result_with_span["overall_bias_score"] > result_no_span["overall_bias_score"]
+
+    def test_emotion_score_uses_span_confidence(self) -> None:
+        classified = [_make_classified(1), _make_classified(2)]
+        low = self.scorer.calculate(
+            classified=classified,
+            span_labels=[_make_span(SentenceLabelType.EMOTIONALLY_LOADED, 1, score=0.2)],
+            headline_body_gap=0.0,
+        )
+        high = self.scorer.calculate(
+            classified=classified,
+            span_labels=[_make_span(SentenceLabelType.EMOTIONALLY_LOADED, 1, score=0.9)],
+            headline_body_gap=0.0,
+        )
+        assert high["emotion_score"] > low["emotion_score"]
+
+    def test_emotion_score_applies_position_weight(self) -> None:
+        classified = [_make_classified(i) for i in range(1, 7)]
+        front = self.scorer.calculate(
+            classified=classified,
+            span_labels=[_make_span(SentenceLabelType.EMOTIONALLY_LOADED, 1, score=0.8)],
+            headline_body_gap=0.0,
+        )
+        back = self.scorer.calculate(
+            classified=classified,
+            span_labels=[_make_span(SentenceLabelType.EMOTIONALLY_LOADED, 6, score=0.8)],
+            headline_body_gap=0.0,
+        )
+        assert front["emotion_score"] > back["emotion_score"]
+
+    def test_emotion_sentence_intensity_is_capped(self) -> None:
+        classified = [_make_classified(1), _make_classified(2)]
+        duplicate_spans = [
+            _make_span(SentenceLabelType.EMOTIONALLY_LOADED, 1, score=0.9),
+            _make_span(SentenceLabelType.EMOTIONALLY_LOADED, 1, score=0.9),
+        ]
+        result = self.scorer.calculate(
+            classified=classified,
+            span_labels=duplicate_spans,
+            headline_body_gap=0.0,
+        )
+        assert result["emotion_score"] == pytest.approx(0.65)
 
     def test_gap_evidence_high(self) -> None:
         classified = [_make_classified(1)]
