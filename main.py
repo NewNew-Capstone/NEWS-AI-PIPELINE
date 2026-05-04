@@ -5,6 +5,7 @@ import logging
 from content_bc.router import router as content_router
 from analysis_bc.router import get_analysis_service, router as analysis_router
 from issue_comparison_bc.router import router as issue_comparison_router
+from chatbot_bc.router import router as chatbot_router
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ app = FastAPI(
 app.include_router(content_router)
 app.include_router(analysis_router)
 app.include_router(issue_comparison_router)
+app.include_router(chatbot_router)
 
 
 @app.on_event("startup")
