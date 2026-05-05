@@ -4,6 +4,7 @@ import logging
 
 from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.enums import EvidenceType, SentenceLabelType
+from analysis_bc.score_utils import normalize_score
 from analysis_bc.schemas import BiasEvidenceDto, SentenceInputDto, SpanLabelDto
 
 logger = logging.getLogger(__name__)
@@ -44,11 +45,12 @@ class EvidenceExtractor:
 
             results.append(
                 BiasEvidenceDto(
+                    content_sentence_id=span.content_sentence_id,
                     evidence_type=evidence_type,
                     title=_EVIDENCE_TITLE[evidence_type],
                     description=sentence_text,
                     source_text=source_text,
-                    confidence_score=span.score,
+                    confidence_score=normalize_score(span.score),
                 )
             )
 
@@ -59,11 +61,12 @@ class EvidenceExtractor:
             sentence_text = sentence_map.get(sent.content_sentence_id, sent.sentence_text)
             results.append(
                 BiasEvidenceDto(
+                    content_sentence_id=sent.content_sentence_id,
                     evidence_type=EvidenceType.OPINION,
                     title=_EVIDENCE_TITLE[EvidenceType.OPINION],
                     description=sentence_text,
                     source_text=sentence_text,
-                    confidence_score=sent.confidence,
+                    confidence_score=normalize_score(sent.confidence),
                 )
             )
 

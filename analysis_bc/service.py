@@ -131,6 +131,7 @@ class AnalysisService:
 
         return BiasAnalysisResultDto(
             target_id=request.target_id,
+            target_type=request.target_type,
             transcript_id=request.transcript_id,
             overall_bias_score=scores["overall_bias_score"],
             opinion_score=scores["opinion_score"],

@@ -120,6 +120,20 @@ def test_search_emotion_returns_span(mock_tagger: SpanTagger) -> None:
     assert span.matched_word == "분노"  # 표면형 사용
 
 
+def test_search_emotion_clamps_score_above_one(mock_tagger: SpanTagger) -> None:
+    sentence = _make_sentence(1, "분노가 커졌다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("분노", "NNG", 0, 2),
+    ]
+    hit = _make_qdrant_hit(1.0000002, {"word": "분노"})
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].score == 1.0
+
+
 def test_search_emotion_no_match_returns_empty(mock_tagger: SpanTagger) -> None:
     """유사도 미달 → 감정 태깅 없음."""
     sentence = _make_sentence(2, "국회는 오늘 예산안을 처리했다")

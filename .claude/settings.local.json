@@ -7,7 +7,8 @@
       "Bash(python -c \":*)",
       "Bash(.venv/bin/ruff check:*)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(.venv/bin/mypy issue_comparison_bc/)"
+      "Bash(.venv/bin/mypy issue_comparison_bc/)",
+      "Bash(git push *)"
     ]
   }
 }

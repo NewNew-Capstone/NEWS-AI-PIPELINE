@@ -9,11 +9,13 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
 import fasttext
+import httpx
 import numpy as np
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
@@ -31,6 +33,7 @@ from analysis_bc.config import (
 
 SENTI_WORD_PATH = "analysis_bc/data/SentiWord_info.json"
 BATCH_SIZE = 100
+FASTTEXT_SERVER_URL = os.getenv("FASTTEXT_SERVER_URL", "").rstrip("/")
 
 # 감정 태깅 블랙리스트: Qdrant index에서 제외할 word_root 목록
 # 추가 기준:
@@ -47,7 +50,26 @@ _EMOTION_BLACKLIST: frozenset[str] = frozenset({
 })
 
 
-def init_emotion_words(client: QdrantClient, ft_model: "fasttext.FastText._FastText") -> None:
+def _embed_words(
+    words: list[str],
+    ft_model: "fasttext.FastText._FastText | None",
+) -> list[np.ndarray]:
+    if FASTTEXT_SERVER_URL:
+        resp = httpx.post(
+            f"{FASTTEXT_SERVER_URL}/embed",
+            json={"words": words},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        return [np.array(v) for v in resp.json()["vectors"]]
+
+    if ft_model is None:
+        raise RuntimeError("FastText model is not loaded")
+
+    return [ft_model.get_word_vector(word) for word in words]
+
+
+def init_emotion_words(client: QdrantClient, ft_model: "fasttext.FastText._FastText | None") -> None:
     print("감정사전 로드 중...", flush=True)
     with open(SENTI_WORD_PATH, encoding="utf-8") as f:
         entries = json.load(f)
@@ -88,10 +110,10 @@ def init_emotion_words(client: QdrantClient, ft_model: "fasttext.FastText._FastT
     print(f"FastText 임베딩 생성 및 적재 중... (총 {len(texts_to_index)}개)", flush=True)
     for batch_start in range(0, len(texts_to_index), BATCH_SIZE):
         batch = texts_to_index[batch_start : batch_start + BATCH_SIZE]
+        vectors = _embed_words([text for text, _ in batch], ft_model)
 
         points = []
-        for i, (text, payload) in enumerate(batch):
-            vec = ft_model.get_word_vector(text)
+        for i, ((_, payload), vec) in enumerate(zip(batch, vectors)):
             norm = np.linalg.norm(vec)
             if norm > 0:
                 vec = vec / norm
@@ -109,8 +131,12 @@ def init_emotion_words(client: QdrantClient, ft_model: "fasttext.FastText._FastT
 
 
 def main() -> None:
-    print(f"FastText 모델 로드 중... ({FASTTEXT_MODEL_PATH})", flush=True)
-    ft_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
+    if FASTTEXT_SERVER_URL:
+        print(f"FastText server 사용 중... ({FASTTEXT_SERVER_URL})", flush=True)
+        ft_model = None
+    else:
+        print(f"FastText 모델 로드 중... ({FASTTEXT_MODEL_PATH})", flush=True)
+        ft_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
 
     print("Qdrant 연결 중...", flush=True)
     client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)

@@ -72,6 +72,7 @@ class BiasAnalysisKeywordDto(BaseModel):
 class BiasEvidenceDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
+    content_sentence_id: int
     evidence_type: EvidenceType
     title: str
     description: str
@@ -89,12 +90,12 @@ class BiasAnalysisResultDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     target_id: int
+    target_type: TargetType | None = None
     transcript_id: int | None = None
     overall_bias_score: float
     opinion_score: float
     emotion_score: float
     headline_body_gap_score: float | None = None
-    neutrality_score: float | None = None
     summary_text: str
     perspective_summary: str
     evidence_summary: str

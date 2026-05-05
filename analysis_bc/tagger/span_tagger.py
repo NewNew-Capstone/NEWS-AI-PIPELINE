@@ -22,9 +22,10 @@ from analysis_bc.config import (
     QDRANT_PORT,
 )
 from analysis_bc.enums import SentenceLabelType
+from analysis_bc.score_utils import normalize_score
 from analysis_bc.schemas import SpanLabelDto
 
-_FASTTEXT_SERVER_URL: str = os.getenv("FASTTEXT_SERVER_URL", "")
+_FASTTEXT_SERVER_URL: str = os.getenv("FASTTEXT_SERVER_URL", "").strip().rstrip("/")
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +174,7 @@ class SpanTagger:
                     start_offset=token.start,
                     end_offset=token.start + token.len,
                     label_type=SentenceLabelType.EMOTIONALLY_LOADED,
-                    score=hits[0].score,
+                    score=normalize_score(hits[0].score),
                     matched_word=surface,
                 )
             )
