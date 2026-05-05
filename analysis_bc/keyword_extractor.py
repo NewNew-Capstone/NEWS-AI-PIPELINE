@@ -6,6 +6,7 @@ from kiwipiepy import Kiwi
 
 from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.enums import BiasKeywordType, SentenceLabelType
+from analysis_bc.score_utils import clamp_score, normalize_score
 from analysis_bc.schemas import BiasAnalysisKeywordDto, SentenceInputDto, SpanLabelDto
 
 logger = logging.getLogger(__name__)
@@ -33,15 +34,11 @@ class KeywordExtractor:
         topic = self._extract_morpheme(fact_sentences, _TOPIC_POS, BiasKeywordType.TOPIC)
         return self._filter(emotion) + self._filter(frame) + self._filter(topic)
 
-    # ------------------------------------------------------------------
-    # private helpers
-    # ------------------------------------------------------------------
-
     def _extract_emotion(
         self,
         span_labels: list[SpanLabelDto],
     ) -> list[BiasAnalysisKeywordDto]:
-        results: list[BiasAnalysisKeywordDto] = []
+        weights: dict[str, float] = {}
         for span in span_labels:
             if span.label_type not in (
                 SentenceLabelType.EMOTIONALLY_LOADED,
@@ -49,16 +46,10 @@ class KeywordExtractor:
             ):
                 continue
             word = span.matched_word
-            if not word:
+            if not word or len(word) < 2:
                 continue
-            results.append(
-                BiasAnalysisKeywordDto(
-                    keyword_text=word,
-                    keyword_type=BiasKeywordType.EMOTION,
-                    score=span.score,
-                )
-            )
-        return results
+            weights[word] = weights.get(word, 0.0) + clamp_score(span.score)
+        return self._to_relative_keywords(weights, BiasKeywordType.EMOTION)
 
     def _extract_morpheme(
         self,
@@ -66,22 +57,33 @@ class KeywordExtractor:
         valid_pos: frozenset[str],
         keyword_type: BiasKeywordType,
     ) -> list[BiasAnalysisKeywordDto]:
-        results: list[BiasAnalysisKeywordDto] = []
+        weights: dict[str, float] = {}
         for sentence in sentences:
-            tokens = self.kiwi.tokenize(sentence.sentence_text)
-            for token in tokens:
+            sentence_weight = clamp_score(sentence.confidence)
+            for token in self.kiwi.tokenize(sentence.sentence_text):
                 if token.tag not in valid_pos:
                     continue
                 if len(token.form) < 2:
                     continue
-                results.append(
-                    BiasAnalysisKeywordDto(
-                        keyword_text=token.form,
-                        keyword_type=keyword_type,
-                        score=sentence.confidence,
-                    )
-                )
-        return results
+                weights[token.form] = weights.get(token.form, 0.0) + sentence_weight
+        return self._to_relative_keywords(weights, keyword_type)
+
+    def _to_relative_keywords(
+        self,
+        weights: dict[str, float],
+        keyword_type: BiasKeywordType,
+    ) -> list[BiasAnalysisKeywordDto]:
+        total = sum(weights.values())
+        if total <= 0:
+            return []
+        return [
+            BiasAnalysisKeywordDto(
+                keyword_text=word,
+                keyword_type=keyword_type,
+                score=normalize_score(weight / total),
+            )
+            for word, weight in weights.items()
+        ]
 
     def _filter(
         self,
@@ -89,14 +91,5 @@ class KeywordExtractor:
     ) -> list[BiasAnalysisKeywordDto]:
         if not keywords:
             return []
-        # 2글자 미만 제거
-        keywords = [k for k in keywords if len(k.keyword_text) >= 2]
-        # 중복 제거 (같은 text+type 조합 → score 높은 것 유지)
-        deduped: dict[tuple[str, str], BiasAnalysisKeywordDto] = {}
-        for k in keywords:
-            key = (k.keyword_text, str(k.keyword_type))
-            if key not in deduped or k.score > deduped[key].score:
-                deduped[key] = k
-        # 타입별 top-N
-        sorted_list = sorted(deduped.values(), key=lambda k: k.score, reverse=True)
+        sorted_list = sorted(keywords, key=lambda k: k.score, reverse=True)
         return sorted_list[:_TOP_N]

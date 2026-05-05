@@ -14,6 +14,7 @@ from analysis_bc.config import (
     QDRANT_PORT,
 )
 from analysis_bc.enums import SentenceLabelType
+from analysis_bc.score_utils import normalize_score
 from analysis_bc.schemas import SpanLabelDto
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class EmotionalTagger:
                             start_offset=token.start,
                             end_offset=token.start + token.len,
                             label_type=SentenceLabelType.EMOTIONALLY_LOADED,
-                            score=hits[0].score,
+                            score=normalize_score(hits[0].score),
                             matched_word=hits[0].payload.get("word_root"),
                         )
                     )

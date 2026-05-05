@@ -6,6 +6,7 @@ from analysis_bc.schemas import (
     BiasEvidenceDto,
     SentenceBiasLabelDto,
     SentenceInputDto,
+    SpanLabelDto,
 )
 
 
@@ -41,6 +42,7 @@ def test_sentence_input_dto_optional_time() -> None:
 def test_analyze_request_dto_valid() -> None:
     req = AnalyzeRequestDto(
         target_id=42,
+        title="제목",
         target_type=TargetType.YOUTUBE_VIDEO,
         transcript_id=7,
         country="KR",
@@ -74,6 +76,7 @@ def test_bias_analysis_keyword_dto_valid() -> None:
 
 def test_bias_evidence_dto_valid() -> None:
     ev = BiasEvidenceDto(
+        content_sentence_id=1,
         evidence_type=EvidenceType.OPINION,
         title="제목",
         description="설명",
@@ -99,10 +102,17 @@ def test_bias_analysis_result_dto_full() -> None:
             BiasAnalysisKeywordDto(keyword_text="kw", keyword_type=BiasKeywordType.FRAME, score=0.5)
         ],
         sentence_labels=[
-            SentenceBiasLabelDto(content_sentence_id=1, label_type=SentenceLabelType.FACT_LIKE, score=0.9)
+            SpanLabelDto(
+                content_sentence_id=1,
+                start_offset=0,
+                end_offset=2,
+                label_type=SentenceLabelType.EMOTIONALLY_LOADED,
+                score=0.9,
+            )
         ],
         evidences=[
             BiasEvidenceDto(
+                content_sentence_id=1,
                 evidence_type=EvidenceType.SPECULATION,
                 title="t",
                 description="d",
@@ -114,7 +124,6 @@ def test_bias_analysis_result_dto_full() -> None:
     assert result.target_id == 42
     assert result.transcript_id == 7
     assert result.headline_body_gap_score is None
-    assert result.neutrality_score is None
     assert len(result.keywords) == 1
     assert len(result.sentence_labels) == 1
     assert len(result.evidences) == 1

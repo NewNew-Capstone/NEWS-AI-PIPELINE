@@ -7,7 +7,7 @@ import pytest
 from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.enums import BiasKeywordType, SentenceLabelType
 from analysis_bc.keyword_extractor import KeywordExtractor
-from analysis_bc.schemas import BiasAnalysisKeywordDto, SentenceInputDto, SpanLabelDto
+from analysis_bc.schemas import SpanLabelDto
 
 
 def _sentence(cid: int, text: str, label: str = "opinion_like", conf: float = 0.9) -> ClassifiedSentenceDto:
@@ -55,7 +55,7 @@ class TestKeywordExtractorEmpty:
     def test_no_emotion_span(self, extractor):
         kw_extractor, mock_kiwi = extractor
         mock_kiwi.tokenize.return_value = []
-        classified = [_sentence(1, "정부가 발표했다", label="fact_like", conf=0.85)]
+        classified = [_sentence(1, "정부가 정책을 발표했다", label="fact_like", conf=0.85)]
         result = kw_extractor.extract(sentences=[], classified=classified, span_labels=[])
         assert all(k.keyword_type != BiasKeywordType.EMOTION for k in result)
 
@@ -69,7 +69,19 @@ class TestKeywordExtractorEmotion:
         emotion_kws = [k for k in result if k.keyword_type == BiasKeywordType.EMOTION]
         assert len(emotion_kws) == 1
         assert emotion_kws[0].keyword_text == "분노"
-        assert emotion_kws[0].score == 0.9
+        assert emotion_kws[0].score == 1.0
+
+    def test_emotion_score_is_relative_importance(self, extractor):
+        kw_extractor, mock_kiwi = extractor
+        mock_kiwi.tokenize.return_value = []
+        spans = [
+            _span(1, SentenceLabelType.EMOTIONALLY_LOADED, score=0.5, matched_word="분노"),
+            _span(2, SentenceLabelType.EMOTIONALLY_LOADED, score=0.5, matched_word="분노"),
+            _span(3, SentenceLabelType.EMOTIONALLY_LOADED, score=1.0, matched_word="불안"),
+        ]
+        result = kw_extractor.extract(sentences=[], classified=[], span_labels=spans)
+        scores = {k.keyword_text: k.score for k in result if k.keyword_type == BiasKeywordType.EMOTION}
+        assert scores == {"분노": 0.5, "불안": 0.5}
 
     def test_emotion_span_without_matched_word_skipped(self, extractor):
         kw_extractor, mock_kiwi = extractor
@@ -87,7 +99,7 @@ class TestKeywordExtractorFilter:
         result = kw_extractor.extract(sentences=[], classified=[], span_labels=[span])
         assert result == []
 
-    def test_dedup_keeps_higher_score(self, extractor):
+    def test_dedup_sums_duplicate_weights(self, extractor):
         kw_extractor, mock_kiwi = extractor
         mock_kiwi.tokenize.return_value = []
         spans = [
@@ -97,7 +109,7 @@ class TestKeywordExtractorFilter:
         result = kw_extractor.extract(sentences=[], classified=[], span_labels=spans)
         emotion_kws = [k for k in result if k.keyword_text == "분노"]
         assert len(emotion_kws) == 1
-        assert emotion_kws[0].score == 0.95
+        assert emotion_kws[0].score == 1.0
 
     def test_top5_limit(self, extractor):
         kw_extractor, mock_kiwi = extractor
@@ -114,10 +126,10 @@ class TestKeywordExtractorFilter:
 
 class TestKeywordExtractorMorpheme:
     def _make_token(self, form: str, tag: str) -> MagicMock:
-        t = MagicMock()
-        t.form = form
-        t.tag = tag
-        return t
+        token = MagicMock()
+        token.form = form
+        token.tag = tag
+        return token
 
     def test_topic_uses_fact_sentences(self, extractor):
         kw_extractor, mock_kiwi = extractor
@@ -130,9 +142,25 @@ class TestKeywordExtractorMorpheme:
 
     def test_frame_uses_opinion_sentences(self, extractor):
         kw_extractor, mock_kiwi = extractor
-        token = self._make_token("붕괴하다", "VV")
+        token = self._make_token("비판하다", "VV")
         mock_kiwi.tokenize.return_value = [token]
-        classified = [_sentence(1, "정책이 붕괴하다", label="opinion_like", conf=0.75)]
+        classified = [_sentence(1, "정책을 비판하다", label="opinion_like", conf=0.75)]
         result = kw_extractor.extract(sentences=[], classified=classified, span_labels=[])
         frame_kws = [k for k in result if k.keyword_type == BiasKeywordType.FRAME]
-        assert any(k.keyword_text == "붕괴하다" for k in frame_kws)
+        assert any(k.keyword_text == "비판하다" for k in frame_kws)
+
+    def test_morpheme_score_is_relative_importance(self, extractor):
+        kw_extractor, mock_kiwi = extractor
+        mock_kiwi.tokenize.side_effect = [
+            [self._make_token("정책", "NNG"), self._make_token("실패", "NNG")],
+            [self._make_token("정책", "NNG")],
+        ]
+        classified = [
+            _sentence(1, "정책 실패", label="opinion_like", conf=0.5),
+            _sentence(2, "정책", label="opinion_like", conf=0.5),
+        ]
+
+        result = kw_extractor.extract(sentences=[], classified=classified, span_labels=[])
+
+        scores = {k.keyword_text: k.score for k in result if k.keyword_type == BiasKeywordType.FRAME}
+        assert scores == {"정책": 0.6667, "실패": 0.3333}

@@ -70,6 +70,7 @@ class TestEvidenceExtractorMapping:
         result = extractor.extract(sentences=sentences, classified=[], span_labels=[span])
         assert len(result) == 1
         assert result[0].evidence_type == EvidenceType.EMOTION
+        assert result[0].content_sentence_id == 1
         assert result[0].title == "감정적 표현"
         assert result[0].confidence_score == 0.9
 
@@ -79,8 +80,15 @@ class TestEvidenceExtractorMapping:
         result = extractor.extract(sentences=sentences, classified=classified, span_labels=[])
         opinion_evs = [e for e in result if e.evidence_type == EvidenceType.OPINION]
         assert len(opinion_evs) == 1
+        assert opinion_evs[0].content_sentence_id == 1
         assert opinion_evs[0].title == "주관적 의견"
         assert opinion_evs[0].confidence_score == 0.88
+
+    def test_confidence_score_is_clamped(self, extractor):
+        sentences = [_input_sentence(1, "감정 표현 문장")]
+        span = _span(1, SentenceLabelType.EMOTIONALLY_LOADED, score=1.0000002, matched_word="감정")
+        result = extractor.extract(sentences=sentences, classified=[], span_labels=[span])
+        assert result[0].confidence_score == 1.0
 
     def test_fact_like_classified_excluded(self, extractor):
         sentences = [_input_sentence(1, "GDP가 3% 성장했다")]
