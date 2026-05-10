@@ -23,3 +23,4 @@ fasttext-wheel
 anthropic
 deep-translator
 httpx
+neo4j
