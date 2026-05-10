@@ -35,6 +35,22 @@ _EMPTY_RESULT: dict = {
     "emotion_score": 0.0,
     "fact_ratio": 0.0,
     "overall_bias_score": 0.0,
+    "score_breakdown": {
+        "weights": {"opinion": 0.4, "emotion": 0.3, "fact_gap": 0.3},
+        "raw_values": {
+            "opinion_score": 0.0,
+            "emotion_score": 0.0,
+            "fact_gap": 0.0,
+            "fact_ratio": 0.0,
+        },
+        "contributions": {"opinion": 0.0, "emotion": 0.0, "fact_gap": 0.0},
+        "formula": (
+            "overall_bias_score = "
+            "0.4 * opinion_score + "
+            "0.3 * emotion_score + "
+            "0.3 * (1 - fact_ratio)"
+        ),
+    },
 }
 
 
@@ -81,12 +97,17 @@ class BiasScorer:
             span_labels=span_labels,
         )
 
+        opinion_contribution = self.weights.w_opinion * opinion_score
+        emotion_contribution = self.weights.w_emotion * emotion_score
+        fact_gap = 1 - fact_ratio
+        fact_gap_contribution = self.weights.w_fact * fact_gap
+
         # ③ overall_bias_score (Vargas 2023 / Garimella 2025 / Media Bias Detector 2024)
         overall_bias_score = round(
             min(
-                self.weights.w_opinion * opinion_score
-                + self.weights.w_emotion * emotion_score
-                + self.weights.w_fact   * (1 - fact_ratio),
+                opinion_contribution
+                + emotion_contribution
+                + fact_gap_contribution,
                 1.0,
             ),
             4,
@@ -114,6 +135,30 @@ class BiasScorer:
             "emotion_score":      round(emotion_score, 4),
             "fact_ratio":         round(fact_ratio,    4),
             "overall_bias_score": overall_bias_score,
+            "score_breakdown": {
+                "weights": {
+                    "opinion": round(self.weights.w_opinion, 4),
+                    "emotion": round(self.weights.w_emotion, 4),
+                    "fact_gap": round(self.weights.w_fact, 4),
+                },
+                "raw_values": {
+                    "opinion_score": round(opinion_score, 4),
+                    "emotion_score": round(emotion_score, 4),
+                    "fact_gap": round(fact_gap, 4),
+                    "fact_ratio": round(fact_ratio, 4),
+                },
+                "contributions": {
+                    "opinion": round(opinion_contribution, 4),
+                    "emotion": round(emotion_contribution, 4),
+                    "fact_gap": round(fact_gap_contribution, 4),
+                },
+                "formula": (
+                    "overall_bias_score = "
+                    "0.4 * opinion_score + "
+                    "0.3 * emotion_score + "
+                    "0.3 * (1 - fact_ratio)"
+                ),
+            },
         }
 
     # ------------------------------------------------------------------

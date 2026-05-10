@@ -68,6 +68,24 @@ class AnalysisService:
             span_labels=sentence_labels,
             headline_body_gap=title_body_gap,
         )
+        breakdown = scores["score_breakdown"]
+        weights = breakdown["weights"]
+        raw_values = breakdown["raw_values"]
+        contributions = breakdown["contributions"]
+        print(
+            "[서비스] Scorer 산식 상세\n"
+            f"  - formula           : {breakdown['formula']}\n"
+            f"  - weights           : opinion={weights['opinion']:.4f}, "
+            f"emotion={weights['emotion']:.4f}, fact_gap={weights['fact_gap']:.4f}\n"
+            f"  - raw_values        : opinion_score={raw_values['opinion_score']:.4f}, "
+            f"emotion_score={raw_values['emotion_score']:.4f}, "
+            f"fact_gap={raw_values['fact_gap']:.4f}, "
+            f"fact_ratio={raw_values['fact_ratio']:.4f}\n"
+            f"  - contributions     : opinion={contributions['opinion']:.4f}, "
+            f"emotion={contributions['emotion']:.4f}, "
+            f"fact_gap={contributions['fact_gap']:.4f}\n"
+            f"  - overall_bias_score: {scores['overall_bias_score']:.4f}"
+        )
         print(f"[서비스] Scorer 완료 — overall: {scores['overall_bias_score']:.4f}")
 
         # FACT 문장 상위 필터링

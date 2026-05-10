@@ -21,13 +21,14 @@ _GAP_B = 0.1   # 극단 fact 기사 (보도자료) — 갭 낮음
 
 WEIGHT_VARIANTS = [
     ScorerWeights(),
-    ScorerWeights(w_opinion=0.4, w_emotion=0.6),
+    ScorerWeights(w_opinion=0.3, w_emotion=0.5, w_fact=0.2),
     ScorerWeights(
-        w_opinion=0.7,
+        w_opinion=0.4,
         w_emotion=0.3,
-        position_weight_front=1.0,
-        position_weight_mid=1.0,
-        position_weight_back=1.0,
+        w_fact=0.3,
+        emotion_position_weight_front=1.0,
+        emotion_position_weight_mid=1.0,
+        emotion_position_weight_back=1.0,
     ),
 ]
 WEIGHT_IDS = ["default", "emotion_heavy", "position_flat"]
@@ -97,7 +98,7 @@ class TestScoreRange:
         assert 0.0 <= result["overall_bias_score"] <= 1.0
         assert 0.0 <= result["opinion_score"] <= 1.0
         assert 0.0 <= result["emotion_score"] <= 1.0
-        assert 0.0 <= result["subjectivity_score"] <= 100.0
+        assert 0.0 <= result["fact_ratio"] <= 1.0
 
     def test_fact_fixture_scores_in_range(self, weights: ScorerWeights) -> None:
         result = BiasScorer(weights).calculate(
@@ -108,7 +109,7 @@ class TestScoreRange:
         assert 0.0 <= result["overall_bias_score"] <= 1.0
         assert 0.0 <= result["opinion_score"] <= 1.0
         assert 0.0 <= result["emotion_score"] <= 1.0
-        assert 0.0 <= result["subjectivity_score"] <= 100.0
+        assert 0.0 <= result["fact_ratio"] <= 1.0
 
 
 # ------------------------------------------------------------------
@@ -141,14 +142,14 @@ def test_opinion_always_higher_than_fact(weights: ScorerWeights) -> None:
 def test_default_weights_backward_compatible() -> None:
     """ScorerWeights() 기본값이 기존 하드코딩 상수와 동일해야 한다."""
     w = ScorerWeights()
-    assert w.w_opinion == pytest.approx(0.7)
+    assert w.w_opinion == pytest.approx(0.4)
     assert w.w_emotion == pytest.approx(0.3)
-    assert w.gap_weight_slope == pytest.approx(0.3)
-    assert w.position_weight_front == pytest.approx(1.3)
-    assert w.position_weight_mid == pytest.approx(1.0)
-    assert w.position_weight_back == pytest.approx(0.8)
-    assert w.position_front_threshold == pytest.approx(0.33)
-    assert w.position_mid_threshold == pytest.approx(0.66)
+    assert w.w_fact == pytest.approx(0.3)
+    assert w.emotion_position_weight_front == pytest.approx(1.3)
+    assert w.emotion_position_weight_mid == pytest.approx(1.0)
+    assert w.emotion_position_weight_back == pytest.approx(0.8)
+    assert w.emotion_position_front_threshold == pytest.approx(0.33)
+    assert w.emotion_position_mid_threshold == pytest.approx(0.66)
     assert w.gap_evidence_high_threshold == pytest.approx(0.7)
     assert w.gap_evidence_mid_threshold == pytest.approx(0.4)
 
@@ -169,9 +170,9 @@ def test_custom_weights_applied() -> None:
     default_result = BiasScorer(ScorerWeights()).calculate(
         classified, partial_spans, _GAP_A
     )
-    heavy_result = BiasScorer(ScorerWeights(w_opinion=0.4, w_emotion=0.6)).calculate(
-        classified, partial_spans, _GAP_A
-    )
+    heavy_result = BiasScorer(
+        ScorerWeights(w_opinion=0.3, w_emotion=0.5, w_fact=0.2)
+    ).calculate(classified, partial_spans, _GAP_A)
     assert default_result["overall_bias_score"] != heavy_result["overall_bias_score"]
 
 
@@ -197,4 +198,4 @@ def test_weight_sum_stability(weights: ScorerWeights) -> None:
 def test_invalid_weights_raise() -> None:
     """w_opinion + w_emotion != 1.0 이면 ValueError가 발생해야 한다."""
     with pytest.raises(ValueError, match="must equal 1.0"):
-        ScorerWeights(w_opinion=0.6, w_emotion=0.6)
+        ScorerWeights(w_opinion=0.6, w_emotion=0.3, w_fact=0.3)
