@@ -7,16 +7,11 @@ from anthropic import Anthropic
 from anthropic.types import TextBlock
 
 from analysis_bc.classifier import ClassifiedSentenceDto
-from analysis_bc.enums import SentenceLabelType
-from analysis_bc.schemas import SpanLabelDto
 
 logger = logging.getLogger(__name__)
 
 _FALLBACK: dict = {
     "summary_text": "",
-    "perspective_summary": "",
-    "evidence_summary": "",
-    "tone_label": "",
 }
 
 
@@ -32,7 +27,6 @@ class BiasSummarizer:
         self,
         fact_sentences: list[ClassifiedSentenceDto],
         opinion_sentences: list[ClassifiedSentenceDto],
-        span_labels: list[SpanLabelDto],
         title: str,
         language: str,
     ) -> dict:
@@ -40,7 +34,6 @@ class BiasSummarizer:
             prompt = self._build_prompt(
                 fact_sentences=fact_sentences,
                 opinion_sentences=opinion_sentences,
-                span_labels=span_labels,
                 title=title,
             )
             response = self.client.messages.create(
@@ -74,7 +67,6 @@ class BiasSummarizer:
         self,
         fact_sentences: list[ClassifiedSentenceDto],
         opinion_sentences: list[ClassifiedSentenceDto],
-        span_labels: list[SpanLabelDto],
         title: str,
     ) -> str:
         fact_text = "\n".join(f"- {s.sentence_text}" for s in fact_sentences)
@@ -82,13 +74,6 @@ class BiasSummarizer:
             f"- {s.sentence_text}" for s in opinion_sentences[:10]
         )
 
-        emotional_spans = [
-            s for s in span_labels
-            if s.label_type in (
-                SentenceLabelType.EMOTIONALLY_LOADED,
-                SentenceLabelType.EMOTIONALLY_LOADED.value,
-            )
-        ]
         return f"""
 아래는 뉴스 영상의 제목과 문장 분석 결과야.
 
@@ -100,16 +85,10 @@ class BiasSummarizer:
 [주관적 문장]
 {opinion_text}
 
-[감지된 편향]
-- 감정적 표현: {len(emotional_spans)}건
-
-아래 4가지를 한국어로 간결하게 작성해줘.
+아래 1가지를 한국어로 간결하게 작성해줘.
 JSON 형식으로만 응답해줘.
 
 {{
-  "summary_text": "사실 문장 기반 객관적 요약 (3문장 이내)",
-  "perspective_summary": "이 영상이 어떤 관점을 취하는지 (2문장 이내)",
-  "evidence_summary": "편향의 주요 근거 (2문장 이내)",
-  "tone_label": "논조를 한 단어로 (예: 비판적, 중립적, 긍정적, 선동적)"
+  "summary_text": "사실 문장 기반 객관적 요약 (3문장 이내)"
 }}
 """.strip()

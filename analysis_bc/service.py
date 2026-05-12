@@ -84,7 +84,6 @@ class AnalysisService:
         summary = self.summarizer.summarize(
             fact_sentences=top_facts,
             opinion_sentences=opinion_sentences,
-            span_labels=sentence_labels,
             title=request.title,
             language=request.language,
         )
@@ -120,13 +119,10 @@ class AnalysisService:
             f"  - emotion_score       : {scores['emotion_score']:.4f}\n"
             f"  - headline_body_gap   : {title_body_gap:.4f}\n"
             f"  - fact_ratio          : {scores['fact_ratio']:.4f}\n"
-            f"  - tone_label          : {summary['tone_label']}\n"
             f"  - keywords            : {len(keywords)}개\n"
             f"  - sentence_labels     : {len(sentence_labels)}개\n"
             f"  - evidences           : {len(evidences)}개\n"
-            f"  - summary_text        : {summary['summary_text'][:50]}...\n"
-            f"  - perspective_summary : {summary['perspective_summary'][:50]}...\n"
-            f"  - evidence_summary    : {summary['evidence_summary'][:50]}..."
+            f"  - summary_text        : {summary['summary_text'][:50]}..."
         )
 
         return BiasAnalysisResultDto(
@@ -141,9 +137,6 @@ class AnalysisService:
             score_evidence=scores["score_evidence"],
             bias_type_scores=scores["bias_type_scores"],
             summary_text=summary["summary_text"],
-            perspective_summary=summary["perspective_summary"],
-            evidence_summary=summary["evidence_summary"],
-            tone_label=summary["tone_label"],
             keywords=keywords,
             sentence_labels=sentence_labels,
             evidences=evidences,
