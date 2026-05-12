@@ -12,7 +12,7 @@ from analysis_bc.schemas import (
     SentenceInputDto,
 )
 from analysis_bc.tagger.span_tagger import SpanTagger
-from analysis_bc.tagger.title_body_gap import TitleBodyGapCalculator
+from analysis_bc.tagger.title_body_gap import GapResult, TitleBodyGapCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -56,17 +56,17 @@ class AnalysisService:
 
         # 제목-본문 갭
         print("[서비스] TitleBodyGap 계산 시작")
-        title_body_gap = self.title_body_gap_calculator.calculate(
+        gap_result: GapResult = self.title_body_gap_calculator.calculate(
             title=request.title,
             sentences=sentences,
         )
-        print(f"[서비스] TitleBodyGap 완료 — gap: {title_body_gap:.4f}")
+        print(f"[서비스] TitleBodyGap 완료 — gap: {gap_result.gap_score:.4f}, std: {gap_result.gap_std:.4f}")
 
         print("[서비스] Scorer 시작")
         scores = self.scorer.calculate(
             classified=classified,
             span_labels=sentence_labels,
-            headline_body_gap=title_body_gap,
+            headline_body_gap=gap_result.gap_score,
         )
         print(f"[서비스] Scorer 완료 — overall: {scores['overall_bias_score']:.4f}")
 
@@ -117,7 +117,7 @@ class AnalysisService:
             f"  - overall_bias_score  : {scores['overall_bias_score']:.4f}\n"
             f"  - opinion_score       : {scores['opinion_score']:.4f}\n"
             f"  - emotion_score       : {scores['emotion_score']:.4f}\n"
-            f"  - headline_body_gap   : {title_body_gap:.4f}\n"
+            f"  - headline_body_gap   : {gap_result.gap_score:.4f} (std: {gap_result.gap_std:.4f})\n"
             f"  - fact_ratio          : {scores['fact_ratio']:.4f}\n"
             f"  - keywords            : {len(keywords)}개\n"
             f"  - sentence_labels     : {len(sentence_labels)}개\n"
@@ -132,7 +132,10 @@ class AnalysisService:
             overall_bias_score=scores["overall_bias_score"],
             opinion_score=scores["opinion_score"],
             emotion_score=scores["emotion_score"],
-            headline_body_gap_score=title_body_gap,
+            headline_body_gap_score=gap_result.gap_score,
+            headline_body_gap_std=gap_result.gap_std,
+            headline_body_gap_lead=gap_result.gap_lead,
+            headline_body_gap_tail=gap_result.gap_tail,
             fact_ratio=scores["fact_ratio"],
             score_evidence=scores["score_evidence"],
             bias_type_scores=scores["bias_type_scores"],

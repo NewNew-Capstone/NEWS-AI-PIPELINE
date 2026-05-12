@@ -96,6 +96,9 @@ class BiasAnalysisResultDto(BaseModel):
     opinion_score: float
     emotion_score: float
     headline_body_gap_score: float | None = None
+    headline_body_gap_std:  float | None = None
+    headline_body_gap_lead: float | None = None
+    headline_body_gap_tail: float | None = None
     summary_text: str
     perspective_summary: str | None = None
     evidence_summary: str | None = None
