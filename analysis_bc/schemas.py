@@ -101,10 +101,7 @@ class BiasAnalysisResultDto(BaseModel):
     headline_body_gap_tail: float | None = None
     headline_body_gap_label: str | None = None
     summary_text: str
-    perspective_summary: str | None = None
-    evidence_summary: str | None = None
     score_reason_summary: str | None = None
-    tone_label: str | None = None
     fact_ratio: float = 0.0
     score_evidence: str = ""
     bias_type_scores: dict[str, float] = Field(default_factory=dict)
