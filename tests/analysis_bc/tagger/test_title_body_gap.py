@@ -106,3 +106,35 @@ class TestTitleBodyGapCalculator:
         self._set_encode(_SIMILAR, embs)
         result = self.calc.calculate("제목", [_s(0), _s(1)])
         assert result.gap_std > 0.0
+
+    # ── 케이스 9~12: gap_label 분류 검증 ─────────────────────────────────
+
+    def test_label_trustworthy(self) -> None:
+        # gap_score ≈ 0 (SIMILAR vs SIMILAR) → trustworthy
+        self._set_encode(_SIMILAR, np.stack([_SIMILAR]))
+        result = self.calc.calculate("제목", [_s(0)])
+        assert result.gap_label == "trustworthy"
+
+    def test_label_clickbait(self) -> None:
+        # gap_lead > 0.4, diff ≤ 0.4 → clickbait
+        # 5문장 모두 ORTHOG: gap_lead ≈ 1.0, gap_tail ≈ 1.0, diff ≈ 0
+        embs = np.stack([_ORTHOG] * 5)
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(5)])
+        assert result.gap_label == "clickbait"
+
+    def test_label_buried_lede(self) -> None:
+        # 앞 3문장 SIMILAR, 뒤 3문장 ORTHOG → diff > 0.4 → buried_lede
+        embs = np.stack([_SIMILAR] * 3 + [_ORTHOG] * 3)
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(6)])
+        assert result.gap_label == "buried_lede"
+
+    def test_label_neutral(self) -> None:
+        # cos_sim(SIMILAR, _mod) = 0.65 → gap = 0.35
+        # 모든 문장이 _mod → gap_lead=0.35 ≤ 0.4, diff=0 ≤ 0.4, gap_score=0.35 ≥ 0.3 → neutral
+        _mod = np.array([0.65, 0.7599] + [0.0] * (_DIM - 2), dtype=np.float32)
+        embs = np.stack([_mod, _mod, _mod])
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(3)])
+        assert result.gap_label == "neutral"

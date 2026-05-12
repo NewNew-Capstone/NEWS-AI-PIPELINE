@@ -21,6 +21,18 @@ class GapResult:
     gap_std:   float   # 문장별 유사도 표준편차
     gap_lead:  float   # 제목 vs 첫 3문장 gap
     gap_tail:  float   # 제목 vs 마지막 3문장 gap
+    gap_label: str = "trustworthy"   # buried_lede / clickbait / trustworthy / neutral
+
+
+def _classify_gap_label(gap_score: float, gap_lead: float, gap_tail: float) -> str:
+    diff = gap_tail - gap_lead
+    if diff > 0.4:
+        return "buried_lede"
+    if gap_lead > 0.4:
+        return "clickbait"
+    if gap_score < 0.3:
+        return "trustworthy"
+    return "neutral"
 
 
 class TitleBodyGapCalculator:
@@ -36,7 +48,7 @@ class TitleBodyGapCalculator:
 
     def calculate(self, title: str, sentences: list[SentenceInputDto]) -> GapResult:
         if not sentences:
-            return GapResult(gap_score=0.0, gap_std=0.0, gap_lead=0.0, gap_tail=0.0)
+            return GapResult(gap_score=0.0, gap_std=0.0, gap_lead=0.0, gap_tail=0.0, gap_label="trustworthy")
 
         texts = [s.sentence_text for s in sentences]
 
@@ -63,8 +75,14 @@ class TitleBodyGapCalculator:
         gap_lead = self._gap_segment(title_emb, sentence_embs[:_LEAD_N])
         gap_tail = self._gap_segment(title_emb, sentence_embs[-_TAIL_N:])
 
+        gap_label = _classify_gap_label(gap_score, gap_lead, gap_tail)
+
         logger.debug(
-            "title_body_gap: score=%.4f std=%.4f lead=%.4f tail=%.4f",
-            gap_score, gap_std, gap_lead, gap_tail,
+            "title_body_gap: score=%.4f std=%.4f lead=%.4f tail=%.4f label=%s",
+            gap_score, gap_std, gap_lead, gap_tail, gap_label,
         )
-        return GapResult(gap_score=gap_score, gap_std=gap_std, gap_lead=gap_lead, gap_tail=gap_tail)
+        return GapResult(
+            gap_score=gap_score, gap_std=gap_std,
+            gap_lead=gap_lead, gap_tail=gap_tail,
+            gap_label=gap_label,
+        )

@@ -99,6 +99,7 @@ class BiasAnalysisResultDto(BaseModel):
     headline_body_gap_std:  float | None = None
     headline_body_gap_lead: float | None = None
     headline_body_gap_tail: float | None = None
+    headline_body_gap_label: str | None = None
     summary_text: str
     perspective_summary: str | None = None
     evidence_summary: str | None = None
