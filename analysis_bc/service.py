@@ -151,6 +151,7 @@ class AnalysisService:
             headline_body_gap_std=gap_result.gap_std,
             headline_body_gap_lead=gap_result.gap_lead,
             headline_body_gap_tail=gap_result.gap_tail,
+            headline_body_gap_label=gap_result.gap_label,
             fact_ratio=scores["fact_ratio"],
             score_evidence=scores["score_evidence"],
             bias_type_scores=scores["bias_type_scores"],
