@@ -99,6 +99,7 @@ class BiasAnalysisResultDto(BaseModel):
     summary_text: str
     perspective_summary: str | None = None
     evidence_summary: str | None = None
+    score_reason_summary: str | None = None
     tone_label: str | None = None
     fact_ratio: float = 0.0
     score_evidence: str = ""
