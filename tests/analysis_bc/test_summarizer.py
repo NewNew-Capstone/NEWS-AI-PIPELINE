@@ -18,6 +18,10 @@ _MOCK_JSON = {
     "tone_label": "비판적",
 }
 _MOCK_TEXT = json.dumps(_MOCK_JSON, ensure_ascii=False)
+_MOCK_SCORE_REASON_JSON = {
+    "score_reason_summary": "전체 편향 점수는 의견성, 감정성, 사실 문장 부족도를 가중합해 계산됩니다."
+}
+_MOCK_SCORE_REASON_TEXT = json.dumps(_MOCK_SCORE_REASON_JSON, ensure_ascii=False)
 
 
 def _make_mock_response(response_text: str) -> MagicMock:
@@ -146,3 +150,63 @@ class TestBiasSummarizer:
         # 문장11~15는 포함되지 않아야 함
         assert "문장11" not in prompt
         assert "문장10" in prompt
+
+    def test_summarize_score_reason_parses_json(self) -> None:
+        summarizer = _make_mock_summarizer(response_text=_MOCK_SCORE_REASON_TEXT)
+        result = summarizer.summarize_score_reason(
+            overall_bias_score=0.4362,
+            opinion_score=0.5,
+            emotion_score=0.12,
+            fact_ratio=0.33,
+            headline_body_gap_score=0.2,
+            score_evidence="전체 문장 중 50%가 주관적 문장입니다.",
+            opinion_sentences=[_classified(1, label="opinion_like")],
+            span_labels=[],
+            language="ko",
+        )
+
+        assert result == _MOCK_SCORE_REASON_JSON["score_reason_summary"]
+
+    def test_summarize_score_reason_api_failure_returns_fallback(self) -> None:
+        with patch("analysis_bc.summarizer.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.side_effect = RuntimeError("API 오류")
+            summarizer = BiasSummarizer()
+
+        result = summarizer.summarize_score_reason(
+            overall_bias_score=0.4362,
+            opinion_score=0.5,
+            emotion_score=0.12,
+            fact_ratio=0.33,
+            headline_body_gap_score=0.2,
+            score_evidence="전체 문장 중 50%가 주관적 문장입니다.",
+            opinion_sentences=[],
+            span_labels=[],
+            language="ko",
+        )
+
+        assert "overall_bias_score 0.4362" in result
+        assert "최종 산식에는 직접 포함되지 않는 별도 참고 지표" in result
+
+    def test_summarize_score_reason_prompt_includes_formula_and_scores(self) -> None:
+        mock_msg = _make_mock_response(_MOCK_SCORE_REASON_TEXT)
+        with patch("analysis_bc.summarizer.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_msg
+            summarizer = BiasSummarizer()
+            summarizer.summarize_score_reason(
+                overall_bias_score=0.4362,
+                opinion_score=0.5,
+                emotion_score=0.12,
+                fact_ratio=0.33,
+                headline_body_gap_score=0.2,
+                score_evidence="전체 문장 중 50%가 주관적 문장입니다.",
+                opinion_sentences=[_classified(1, label="opinion_like")],
+                span_labels=[_span(SentenceLabelType.EMOTIONALLY_LOADED)],
+                language="ko",
+            )
+            call_args = MockClient.return_value.messages.create.call_args
+
+        prompt: str = call_args.kwargs["messages"][0]["content"]
+        assert "overall_bias_score = 0.4 * opinion_score" in prompt
+        assert "overall_bias_score: 0.4362" in prompt
+        assert "opinion_score: 0.5000" in prompt
+        assert "fact_ratio: 0.3300" in prompt
