@@ -89,6 +89,20 @@ class AnalysisService:
         )
         print("[서비스] Summarizer 완료")
 
+        print("[서비스] ScoreReasonSummarizer 시작")
+        score_reason_summary = self.summarizer.summarize_score_reason(
+            overall_bias_score=scores["overall_bias_score"],
+            opinion_score=scores["opinion_score"],
+            emotion_score=scores["emotion_score"],
+            fact_ratio=scores["fact_ratio"],
+            headline_body_gap_score=title_body_gap,
+            score_evidence=scores["score_evidence"],
+            opinion_sentences=opinion_sentences,
+            span_labels=sentence_labels,
+            language=request.language,
+        )
+        print("[서비스] ScoreReasonSummarizer 완료")
+
         print("[서비스] KeywordExtractor 시작")
         keywords = self.keyword_extractor.extract(
             sentences=sentences,
@@ -122,7 +136,8 @@ class AnalysisService:
             f"  - keywords            : {len(keywords)}개\n"
             f"  - sentence_labels     : {len(sentence_labels)}개\n"
             f"  - evidences           : {len(evidences)}개\n"
-            f"  - summary_text        : {summary['summary_text'][:50]}..."
+            f"  - summary_text        : {summary.get('summary_text', '')[:50]}...\n"
+            f"  - score_reason_summary: {score_reason_summary[:50]}..."
         )
 
         return BiasAnalysisResultDto(
@@ -136,7 +151,11 @@ class AnalysisService:
             fact_ratio=scores["fact_ratio"],
             score_evidence=scores["score_evidence"],
             bias_type_scores=scores["bias_type_scores"],
-            summary_text=summary["summary_text"],
+            summary_text=summary.get("summary_text", ""),
+            perspective_summary=summary.get("perspective_summary"),
+            evidence_summary=summary.get("evidence_summary"),
+            score_reason_summary=score_reason_summary,
+            tone_label=summary.get("tone_label"),
             keywords=keywords,
             sentence_labels=sentence_labels,
             evidences=evidences,

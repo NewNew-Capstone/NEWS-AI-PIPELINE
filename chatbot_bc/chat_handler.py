@@ -61,6 +61,7 @@ def build_analysis_prompt(analysis_context: dict[str, Any] | None) -> str:
         f"- 요약: {analysis_context.get('summary_text', '정보 없음')}",
         f"- 관점 요약: {analysis_context.get('perspective_summary', '정보 없음')}",
         f"- 편향 근거 요약: {analysis_context.get('evidence_summary', '정보 없음')}",
+        f"- 점수 산출 근거: {analysis_context.get('score_reason_summary', '정보 없음')}",
     ]
 
     if keywords:

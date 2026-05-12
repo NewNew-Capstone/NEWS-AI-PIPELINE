@@ -97,6 +97,7 @@ def test_bias_analysis_result_dto_full() -> None:
         summary_text="요약",
         perspective_summary="관점 요약",
         evidence_summary="근거 요약",
+        score_reason_summary="점수 근거 요약",
         tone_label="중립",
         keywords=[
             BiasAnalysisKeywordDto(keyword_text="kw", keyword_type=BiasKeywordType.FRAME, score=0.5)
@@ -124,6 +125,7 @@ def test_bias_analysis_result_dto_full() -> None:
     assert result.target_id == 42
     assert result.transcript_id == 7
     assert result.headline_body_gap_score is None
+    assert result.score_reason_summary == "점수 근거 요약"
     assert len(result.keywords) == 1
     assert len(result.sentence_labels) == 1
     assert len(result.evidences) == 1
