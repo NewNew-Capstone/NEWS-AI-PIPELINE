@@ -43,7 +43,7 @@ class TestTitleBodyGapCalculator:
 
     def test_empty_sentences_returns_zero(self) -> None:
         result = self.calc.calculate("제목", [])
-        assert result == GapResult(gap_score=0.0, gap_std=0.0, gap_lead=0.0, gap_tail=0.0)
+        assert result == GapResult(gap_score=0.0, gap_std=0.0, gap_lead=0.0, gap_tail=0.0, gap_label="unknown")
 
     # ── 케이스 2: 1문장 — lead == tail == gap_score, std == 0 ──────────────
 
@@ -110,10 +110,18 @@ class TestTitleBodyGapCalculator:
     # ── 케이스 9~12: gap_label 분류 검증 ─────────────────────────────────
 
     def test_label_trustworthy(self) -> None:
-        # gap_score ≈ 0 (SIMILAR vs SIMILAR) → trustworthy
+        # gap_score ≈ 0, gap_std = 0 (단일 SIMILAR 문장) → trustworthy
         self._set_encode(_SIMILAR, np.stack([_SIMILAR]))
         result = self.calc.calculate("제목", [_s(0)])
         assert result.gap_label == "trustworthy"
+
+    def test_label_trustworthy_high_std_becomes_neutral(self) -> None:
+        # gap_score 낮아도 gap_std > _STD_HIGH(0.20) 이면 trustworthy 제외 → neutral
+        # per_sim = [1.0, 0.0] → std = 0.5 > 0.20
+        embs = np.stack([_SIMILAR, _ORTHOG])
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(2)])
+        assert result.gap_label == "neutral"
 
     def test_label_clickbait(self) -> None:
         # gap_lead > 0.4, diff ≤ 0.4 → clickbait
@@ -123,8 +131,16 @@ class TestTitleBodyGapCalculator:
         result = self.calc.calculate("제목", [_s(i) for i in range(5)])
         assert result.gap_label == "clickbait"
 
+    def test_label_clickbait_priority_over_buried(self) -> None:
+        # gap_lead > 0.4 이면서 diff > 0.4 인 경우 → clickbait (우선순위 수정 검증)
+        # 앞 3문장 ORTHOG(gap_lead≈1.0), 뒤 3문장 SIMILAR(gap_tail≈0.0) → diff < 0, gap_lead > 0.4
+        embs = np.stack([_ORTHOG] * 3 + [_SIMILAR] * 3)
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(6)])
+        assert result.gap_label == "clickbait"
+
     def test_label_buried_lede(self) -> None:
-        # 앞 3문장 SIMILAR, 뒤 3문장 ORTHOG → diff > 0.4 → buried_lede
+        # 앞 3문장 SIMILAR(gap_lead≈0), 뒤 3문장 ORTHOG(gap_tail≈1.0) → diff > 0.4 → buried_lede
         embs = np.stack([_SIMILAR] * 3 + [_ORTHOG] * 3)
         self._set_encode(_SIMILAR, embs)
         result = self.calc.calculate("제목", [_s(i) for i in range(6)])
@@ -138,3 +154,22 @@ class TestTitleBodyGapCalculator:
         self._set_encode(_SIMILAR, embs)
         result = self.calc.calculate("제목", [_s(i) for i in range(3)])
         assert result.gap_label == "neutral"
+
+    # ── 케이스 13~14: 짧은 기사 lead/tail 비중복 ─────────────────────────
+
+    def test_short_article_3sentences_no_overlap(self) -> None:
+        # 3문장 이하: lead=[0:3], tail 없음 → gap_lead == gap_tail
+        embs = np.stack([_SIMILAR, _HALF, _ORTHOG])
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(3)])
+        assert result.gap_lead == result.gap_tail
+
+    def test_short_article_5sentences_no_overlap(self) -> None:
+        # 5문장: lead=[0:3], tail=[3:5] — 중복 없음
+        # lead(SIMILAR*3) gap ≈ 0, tail(ORTHOG*2) gap ≈ 1.0 → diff > 0.4 → buried_lede
+        embs = np.stack([_SIMILAR] * 3 + [_ORTHOG] * 2)
+        self._set_encode(_SIMILAR, embs)
+        result = self.calc.calculate("제목", [_s(i) for i in range(5)])
+        assert result.gap_lead < 0.1
+        assert result.gap_tail > 0.9
+        assert result.gap_label == "buried_lede"
