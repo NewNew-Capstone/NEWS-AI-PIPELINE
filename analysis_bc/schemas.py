@@ -109,6 +109,7 @@ class BiasAnalysisResultDto(BaseModel):
     score_evidence: str = ""
     bias_type_scores: dict[str, float] = Field(default_factory=dict)
     keywords: list[BiasAnalysisKeywordDto]
+    emotion_keywords: list[BiasAnalysisKeywordDto] = Field(default_factory=list)
     sentence_labels: list[SpanLabelDto]
     evidences: list[BiasEvidenceDto]
 

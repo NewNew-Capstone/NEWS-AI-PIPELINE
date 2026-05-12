@@ -95,7 +95,7 @@ class AnalysisService:
             opinion_score=scores["opinion_score"],
             emotion_score=scores["emotion_score"],
             fact_ratio=scores["fact_ratio"],
-            headline_body_gap_score=title_body_gap,
+            headline_body_gap_score=gap_result.gap_score,
             score_evidence=scores["score_evidence"],
             opinion_sentences=opinion_sentences,
             span_labels=sentence_labels,
@@ -109,7 +109,8 @@ class AnalysisService:
             classified=classified,
             span_labels=sentence_labels,
         )
-        print(f"[서비스] KeywordExtractor 완료 — 키워드 수: {len(keywords)}")
+        emotion_keywords = [k for k in keywords if k.keyword_type == "EMOTION"]
+        print(f"[서비스] KeywordExtractor 완료 — 키워드 수: {len(keywords)}, emotion: {len(emotion_keywords)}")
 
         print("[서비스] EvidenceExtractor 시작")
         evidences = self.evidence_extractor.extract(
@@ -161,6 +162,7 @@ class AnalysisService:
             score_reason_summary=score_reason_summary,
             tone_label=summary.get("tone_label"),
             keywords=keywords,
+            emotion_keywords=emotion_keywords,
             sentence_labels=sentence_labels,
             evidences=evidences,
         )
