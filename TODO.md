@@ -3,6 +3,7 @@
 ## 공통
 - [ ] `db/schemas/` — ContentPreparedEvent, AnalysisCompletedEvent, IssueClusterCreatedEvent 정의
 - [ ] `.claude/settings.json` Hook 설정 (scripts/ 완성 후)
+- [ ] 최종발표 3주 실행계획 기반 주차별 진행 관리 (`docs/final-presentation-3week-execution-plan.md`)
 
 ## A 담당 (analysis_bc)
 - [x] `router.py` 구현 (POST /analyze)
