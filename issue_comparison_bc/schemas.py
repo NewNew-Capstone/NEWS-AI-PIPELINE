@@ -17,3 +17,5 @@ class ClusterSimilarityResponse(BaseModel):
     title_similarity: float
     # 요약 임베딩 간 코사인 유사도 (0.0 ~ 1.0)
     summary_similarity: float
+    # 기능1 전용 cluster_type
+    applied_cluster_type: str = "SEARCH_AUTO"

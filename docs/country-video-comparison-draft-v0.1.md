@@ -17,16 +17,16 @@
 - 사용 노드:
   - `Video`
   - `Channel`
-  - `IssueCluster`
+  - `Issue` (also compatible with existing `IssueCluster` / `IssueNode`)
   - `AnalysisResult`
 - 사용 관계:
   - `(Video)-[:PUBLISHED_BY]->(Channel)`
-  - `(Video)-[:BELONGS_TO]->(IssueCluster)`
+  - `(Video)-[:PART_OF]->(Issue)`
   - `(Video)-[:HAS_ANALYSIS]->(AnalysisResult)`
 - 주요 속성(viewCount, publishedAt, sentimentScore 등):
   - Video: `video_id`, `title`, `country` 또는 `country_code`, `viewCount`, `published_at`
   - Channel: `channel_id`, `channel_name`
-  - IssueCluster: `issue_id`, `name`
+  - Issue: `issue_id`, `name` 또는 `title` 또는 `keyword`
   - AnalysisResult: `analysis_id`, `overall_bias_score`, `tone_label`, `status`
 
 ## 4. 비교 지표 정의
@@ -37,7 +37,7 @@
 - 지표3: 감정(톤/편향) 점수 평균
   - 정의: `avg(overall_bias_score)` + `tone_label` 분포
 - 지표4: 주제 분포 Top N
-  - 정의: `IssueCluster.name` 빈도 기준 상위 N개
+  - 정의: `Issue.name` 또는 호환 이슈 라벨의 `name/title/keyword` 빈도 기준 상위 N개
 - 지표5: 채널 편중도(상위 3채널 비중)
   - 정의: 국가/이슈별 상위 3개 채널 조회수 합 / 전체 조회수
 
@@ -55,7 +55,7 @@
     - RDB/JSON 중심 집계, 구현이 빠르고 설명이 쉬움
     - 한계: 확산 경로/브리지 채널 등 관계 정보 해석이 약함
   - 대안 B (KG 중심 구조 분석):
-    - `Video-Channel-IssueCluster-AnalysisResult` 관계 기반 구조 분석
+    - `Video-Channel-Issue-AnalysisResult` 관계 기반 구조 분석
     - 장점: 누가 이슈를 연결/증폭했는지 설명 가능
     - 한계: 라벨/관계 품질과 스키마 일관성에 민감
   - 대안 C (하이브리드, 권장):

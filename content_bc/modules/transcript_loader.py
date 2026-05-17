@@ -1,6 +1,7 @@
-# 실제 유튜브 자막 가져오는 함수
-# region 코드에 따라 언어 선택
+import logging
+
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import NoTranscriptFound, NotTranslatable
 from deep_translator import GoogleTranslator
 
 LANG_MAP = {
@@ -10,6 +11,8 @@ LANG_MAP = {
 }
 
 MAX_CHUNK = 4500
+FALLBACK_LANGS = ["ko", "en", "ko-KR", "en-US"]
+logger = logging.getLogger(__name__)
 
 
 def _deduplicate(segments: list[str]) -> str:
@@ -35,15 +38,30 @@ def _translate_to_korean(text: str) -> str:
 
 
 def load_transcript(video_id: str, region_code: str = "US") -> str:
-    langs = LANG_MAP.get(region_code, ["en"])
+    normalized_region = (region_code or "US").upper()
+    preferred = LANG_MAP.get(normalized_region, ["en"])
+    langs = list(dict.fromkeys(preferred + FALLBACK_LANGS))
     ytt = YouTubeTranscriptApi()
-    transcript = ytt.fetch(video_id, languages=langs)
+    try:
+        transcript = ytt.fetch(video_id, languages=langs)
+    except NoTranscriptFound:
+        # 마지막 fallback: 언어 우선순위 없이 유튜브가 제공하는 기본 자막 시도
+        transcript = ytt.fetch(video_id)
 
-    if region_code != "KR":
+    if normalized_region != "KR":
         try:
             translated = transcript.translate("ko")
             segments = [t.text for t in translated]
+        except NotTranslatable:
+            raw = _deduplicate([t.text for t in transcript])
+            return _translate_to_korean(raw)
         except Exception:
+            logger.warning(
+                "transcript.translate failed; fallback to deep translator video_id=%s region=%s",
+                video_id,
+                normalized_region,
+                exc_info=True,
+            )
             raw = _deduplicate([t.text for t in transcript])
             return _translate_to_korean(raw)
     else:

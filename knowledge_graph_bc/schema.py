@@ -22,6 +22,16 @@ SCHEMA_CONSTRAINTS: tuple[str, ...] = (
     REQUIRE i.issue_id IS UNIQUE
     """,
     """
+    CREATE CONSTRAINT issue_id_unique IF NOT EXISTS
+    FOR (i:Issue)
+    REQUIRE i.issue_id IS UNIQUE
+    """,
+    """
+    CREATE CONSTRAINT issue_node_id_unique IF NOT EXISTS
+    FOR (i:IssueNode)
+    REQUIRE i.issue_id IS UNIQUE
+    """,
+    """
     CREATE CONSTRAINT analysis_result_id_unique IF NOT EXISTS
     FOR (a:AnalysisResult)
     REQUIRE a.analysis_id IS UNIQUE

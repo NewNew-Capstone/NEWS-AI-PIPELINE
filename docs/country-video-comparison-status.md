@@ -9,7 +9,7 @@
 ## 진행 상태 (요약)
 - 전체 진행률: 70%
 - 현재 단계: 초기 테스트 틀/템플릿 확정 완료, 실측 데이터 반영 대기
-- 현재 블로커: 실데이터 미적재로 정량 결과(accuracy/reproducibility) 확정 불가
+- 현재 블로커: Spring 수집/검색 플로우의 실데이터 Neo4j 적재 전까지 정량 결과(accuracy/reproducibility) 확정 불가
 - 현재 비교 프레임: 대안 A(비KG 집계) / 대안 B(KG 구조) / 대안 C(하이브리드) 병렬 평가 예정
 
 ## 오늘 작업
@@ -25,12 +25,12 @@
 - [ ] 대안 A/B/C 공통 스코어카드 1차 채점
 
 ## 이슈/리스크
-- 이슈: 실데이터(영상/분석결과) 대량 적재 전 단계
+- 이슈: 실데이터(영상/채널/이슈/분석결과) 대량 적재 전 단계
 - 영향: 국가별 실측 비교 결과 및 채택 판단 지연
 - 대응 계획: 템플릿 기반으로 우선 문서/평가 기준 확정 후, 데이터 적재 즉시 재실행
 - 이슈: KG 라벨/속성 표준화 미확정 시 구조 분석 품질 저하 가능
 - 영향: 대안 B/C 해석 신뢰도 하락 가능
-- 대응 계획: `country`/`country_code`, `viewCount`, `published_at` 우선 표준화
+- 대응 계획: `docs/spring-neo4j-ingestion-contract.md` 기준으로 `country_code`, `language`, `view_count`, `published_at`, `target_id` 우선 표준화
 
 ## 의사결정 로그
 - 2026-05-10: 이번 범위는 “문서 + 초기 테스트 템플릿”으로 제한, 대량 적재는 제외 (요청자/작성자)
@@ -40,10 +40,11 @@
 
 ## 요청사항
 - 데이터팀:
-  - Video/Channel/IssueCluster/AnalysisResult 적재 스펙 공유
+  - Video/Channel/Issue/AnalysisResult 적재 스펙 공유 (`IssueCluster`/`IssueNode` 호환 가능)
   - `country`/`country_code` 표준 필드 합의
 - 백엔드팀:
-  - 적재 파이프라인 실행 스케줄/실패 재처리 정책 확정
+  - Spring 적재 파이프라인 실행 스케줄/실패 재처리 정책 확정
+  - Spring 프록시 경로를 `/api/v1/comparison/*`로 고정
   - 분석결과(`overall_bias_score`, `tone_label`, `status`) 필드 보장
 - 기획/PM:
   - 1차 비교 대상 국가/이슈 확정

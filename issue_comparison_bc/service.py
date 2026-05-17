@@ -30,4 +30,5 @@ class IssueComparisonService:
         return ClusterSimilarityResponse(
             title_similarity=title_sim,
             summary_similarity=summary_sim,
+            applied_cluster_type="SEARCH_AUTO",
         )
