@@ -10,7 +10,7 @@ REDIS_PORT  = int(os.getenv("REDIS_PORT", 6380))
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 
-QDRANT_EMOTION_COLLECTION      = "emotion_words"
+QDRANT_EMOTION_COLLECTION      = os.getenv("QDRANT_EMOTION_COLLECTION", "emotion_words_v2")
 EMOTION_VECTOR_SIZE            = 300   # FastText cc.ko.300
 EMOTION_SIMILARITY_THRESHOLD   = float(os.getenv("EMOTION_SIMILARITY_THRESHOLD", "0.88"))
 EMOTION_TOP_K                  = int(os.getenv("EMOTION_TOP_K", "3"))

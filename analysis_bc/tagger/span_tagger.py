@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import os
 import time
+from dataclasses import dataclass, field
+from typing import Literal
 
 import fasttext
 import httpx
@@ -41,6 +43,42 @@ _VALID_POS: frozenset[str] = frozenset({
 })
 
 
+RejectReason = Literal[
+    "invalid_pos",
+    "too_short",
+    "no_hit",
+    "low_margin",
+    "below_threshold",
+]
+
+
+@dataclass
+class TokenTrace:
+    form: str
+    surface: str
+    tag: str
+    start: int
+    length: int
+    accepted: bool = False
+    reject_reason: RejectReason | None = None
+    qdrant_scores: list[float] = field(default_factory=list)
+    created_span: SpanLabelDto | None = None
+
+
+@dataclass
+class SentenceTrace:
+    content_sentence_id: int
+    sentence_text: str
+    tokens: list[TokenTrace] = field(default_factory=list)
+
+
+@dataclass
+class TagTrace:
+    qdrant_healthy: bool
+    qdrant_health_reason: str
+    sentences: list[SentenceTrace] = field(default_factory=list)
+
+
 class SpanTagger:
     """OPINION 문장의 span에 감정 태그를 붙여 반환한다.
 
@@ -59,6 +97,7 @@ class SpanTagger:
         else:
             self.ft_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
             self._ft_server_url = ""
+        self.last_debug_trace: TagTrace | None = None
 
     def _is_qdrant_healthy(self) -> bool:
         now = time.monotonic()
@@ -77,14 +116,40 @@ class SpanTagger:
         self._health_checked_at = now
         return self._qdrant_healthy
 
-    def tag(self, sentences: list[ClassifiedSentenceDto]) -> list[SpanLabelDto]:
+    def tag(
+        self,
+        sentences: list[ClassifiedSentenceDto],
+        debug: bool = False,
+    ) -> list[SpanLabelDto]:
         print(f"[SpanTagger] tag() 시작 — opinion 문장 수: {len(sentences)}")
-        if not self._is_qdrant_healthy():
+        self.last_debug_trace = None
+
+        is_healthy = self._is_qdrant_healthy()
+        if debug:
+            self.last_debug_trace = TagTrace(
+                qdrant_healthy=is_healthy,
+                qdrant_health_reason="ok" if is_healthy else "health_check_failed",
+            )
+
+        if not is_healthy:
             return []
         results: list[SpanLabelDto] = []
         for sentence in sentences:
             tokens = self.kiwi.tokenize(sentence.sentence_text)
-            emotion_spans = self._search_emotion(sentence, tokens)
+            sentence_trace = None
+            if debug and self.last_debug_trace is not None:
+                sentence_trace = SentenceTrace(
+                    content_sentence_id=sentence.content_sentence_id,
+                    sentence_text=sentence.sentence_text,
+                )
+            emotion_spans = self._search_emotion(
+                sentence=sentence,
+                tokens=tokens,
+                debug=debug,
+                sentence_trace=sentence_trace,
+            )
+            if debug and self.last_debug_trace is not None and sentence_trace is not None:
+                self.last_debug_trace.sentences.append(sentence_trace)
             results.extend(emotion_spans)
         print(f"[SpanTagger] tag() 완료 — 총 라벨 수: {len(results)}")
         return results
@@ -97,6 +162,8 @@ class SpanTagger:
         self,
         sentence: ClassifiedSentenceDto,
         tokens: list,
+        debug: bool = False,
+        sentence_trace: SentenceTrace | None = None,
     ) -> list[SpanLabelDto]:
         """형태소 토큰을 FastText로 embed 후 emotion_words 컬렉션에서 검색한다.
 
@@ -107,10 +174,28 @@ class SpanTagger:
         """
         spans: list[SpanLabelDto] = []
 
-        valid_tokens = [
-            t for t in tokens
-            if t.tag in _VALID_POS and len(t.form) >= 2
-        ]
+        valid_tokens = []
+        token_traces: list[TokenTrace] = []
+        for t in tokens:
+            surface = sentence.sentence_text[t.start:t.start + t.len]
+            trace = TokenTrace(
+                form=t.form,
+                surface=surface,
+                tag=t.tag,
+                start=t.start,
+                length=t.len,
+            )
+            if t.tag not in _VALID_POS:
+                trace.reject_reason = "invalid_pos"
+            elif len(t.form) < 2:
+                trace.reject_reason = "too_short"
+            else:
+                valid_tokens.append(t)
+            token_traces.append(trace)
+
+        if debug and sentence_trace is not None:
+            sentence_trace.tokens.extend(token_traces)
+
         if not valid_tokens:
             return spans
 
@@ -146,20 +231,44 @@ class SpanTagger:
                 QueryRequest(
                     query=vec.tolist(),
                     limit=EMOTION_TOP_K,
-                    score_threshold=EMOTION_SIMILARITY_THRESHOLD,
+                    score_threshold=None if debug else EMOTION_SIMILARITY_THRESHOLD,
                     with_payload=True,
                 )
                 for vec in embeddings
             ],
         )
 
+        valid_index = 0
         for token, result in zip(valid_tokens, batch_results):
             hits = result.points
+            trace = None
+            if debug and sentence_trace is not None:
+                while valid_index < len(sentence_trace.tokens):
+                    candidate = sentence_trace.tokens[valid_index]
+                    valid_index += 1
+                    if candidate.reject_reason is None:
+                        trace = candidate
+                        break
+
+            if debug and trace is not None:
+                trace.qdrant_scores = [float(h.score) for h in hits]
+
             if not hits:
+                if debug and trace is not None:
+                    trace.reject_reason = "no_hit"
                 continue
+
+            if debug:
+                if hits[0].score < EMOTION_SIMILARITY_THRESHOLD:
+                    if trace is not None:
+                        trace.reject_reason = "below_threshold"
+                    continue
+
             if len(hits) >= 2:
                 margin = hits[0].score - hits[1].score
                 if margin < EMOTION_SCORE_MARGIN:
+                    if debug and trace is not None:
+                        trace.reject_reason = "low_margin"
                     continue
             surface = sentence.sentence_text[token.start:token.start + token.len]
             logger.debug(
@@ -168,14 +277,16 @@ class SpanTagger:
                 surface,
                 hits[0].score,
             )
-            spans.append(
-                SpanLabelDto(
-                    content_sentence_id=sentence.content_sentence_id,
-                    start_offset=token.start,
-                    end_offset=token.start + token.len,
-                    label_type=SentenceLabelType.EMOTIONALLY_LOADED,
-                    score=normalize_score(hits[0].score),
-                    matched_word=surface,
-                )
+            span = SpanLabelDto(
+                content_sentence_id=sentence.content_sentence_id,
+                start_offset=token.start,
+                end_offset=token.start + token.len,
+                label_type=SentenceLabelType.EMOTIONALLY_LOADED,
+                score=normalize_score(hits[0].score),
+                matched_word=surface,
             )
+            spans.append(span)
+            if debug and trace is not None:
+                trace.accepted = True
+                trace.created_span = span
         return spans
