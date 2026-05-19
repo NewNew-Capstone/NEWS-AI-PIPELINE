@@ -5,16 +5,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-REDIS_HOST  = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT  = int(os.getenv("REDIS_PORT", 6380))
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6380))
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 
-QDRANT_EMOTION_COLLECTION      = "emotion_words"
-EMOTION_VECTOR_SIZE            = 300   # FastText cc.ko.300
-EMOTION_SIMILARITY_THRESHOLD   = float(os.getenv("EMOTION_SIMILARITY_THRESHOLD", "0.88"))
-EMOTION_TOP_K                  = int(os.getenv("EMOTION_TOP_K", "3"))
-EMOTION_SCORE_MARGIN           = float(os.getenv("EMOTION_SCORE_MARGIN", "0.06"))
+QDRANT_EMOTION_COLLECTION = os.getenv("QDRANT_EMOTION_COLLECTION", "emotion_words_v2")
+EMOTION_VECTOR_SIZE = 300  # FastText cc.ko.300
+EMOTION_SIMILARITY_THRESHOLD = float(os.getenv("EMOTION_SIMILARITY_THRESHOLD", "0.88"))
+EMOTION_TOP_K = int(os.getenv("EMOTION_TOP_K", "3"))
+EMOTION_SCORE_MARGIN = float(os.getenv("EMOTION_SCORE_MARGIN", "0.06"))
+
+EMOTION_GATE_ENABLED = os.getenv("EMOTION_GATE_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+    "on",
+}
+EMOTION_GATE_MODEL_NAME = os.getenv("EMOTION_GATE_MODEL_NAME", "searle-j/kote_for_easygoing_people")
+EMOTION_GATE_THRESHOLD = float(os.getenv("EMOTION_GATE_THRESHOLD", "0.35"))
+EMOTION_GATE_LABEL_THRESHOLD = float(os.getenv("EMOTION_GATE_LABEL_THRESHOLD", "0.20"))
+EMOTION_GATE_TOP_K = int(os.getenv("EMOTION_GATE_TOP_K", "3"))
+EMOTION_POLARITY_FILTER_ENABLED = os.getenv("EMOTION_POLARITY_FILTER_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+    "on",
+}
 
 FASTTEXT_MODEL_PATH = os.getenv("FASTTEXT_MODEL_PATH", "analysis_bc/data/cc.ko.300.bin")
 

@@ -36,6 +36,14 @@ def test_schema_constraints_are_idempotent() -> None:
     assert all("IF NOT EXISTS" in query for query in SCHEMA_CONSTRAINTS)
 
 
+def test_schema_constraints_cover_spring_issue_labels() -> None:
+    joined_constraints = "\n".join(SCHEMA_CONSTRAINTS)
+
+    assert "FOR (i:IssueCluster)" in joined_constraints
+    assert "FOR (i:Issue)" in joined_constraints
+    assert "FOR (i:IssueNode)" in joined_constraints
+
+
 def test_init_schema_runs_all_constraints() -> None:
     config = Neo4jConfig(
         uri="neo4j+s://example.databases.neo4j.io",

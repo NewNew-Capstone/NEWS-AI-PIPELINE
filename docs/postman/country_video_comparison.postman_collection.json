@@ -1,0 +1,457 @@
+{
+  "info": {
+    "_postman_id": "3615ea6d-7f2d-4d13-a2de-country-video-comparison",
+    "name": "Country Video Comparison Integration",
+    "description": "Python FastAPI and Spring /api/v1 comparison proxy integration checks for country video comparison APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Python API",
+      "item": [
+        {
+          "name": "Python - Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Python health returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Python health status is ok', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/health",
+              "host": ["{{python_base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Python - Neo4j Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Neo4j health returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Neo4j status is ok', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.ok).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/kg/health",
+              "host": ["{{python_base_url}}"],
+              "path": ["kg", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Python - Comparison Home",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Comparison home returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Comparison home has issue keywords and three sections', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.issue_keywords).to.be.an('array');",
+                  "  pm.expect(json.sections).to.be.an('array').with.lengthOf(3);",
+                  "});",
+                  "pm.test('Comparison home target sections are KR/ko, US/en, CN/zh', function () {",
+                  "  const json = pm.response.json();",
+                  "  const keys = json.sections.map(s => `${s.country_code}/${s.language}`).sort();",
+                  "  pm.expect(keys).to.eql(['CN/zh', 'KR/ko', 'US/en']);",
+                  "});",
+                  "const home = pm.response.json();",
+                  "for (const section of home.sections || []) {",
+                  "  const firstVideo = (section.videos || [])[0];",
+                  "  if (firstVideo && firstVideo.video_id && !pm.environment.get('video_id')) {",
+                  "    pm.environment.set('video_id', firstVideo.video_id);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/kg/comparison-home?limit=5",
+              "host": ["{{python_base_url}}"],
+              "path": ["kg", "comparison-home"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Python - Search Videos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search videos returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Search videos has target sections', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.keyword).to.eql(pm.environment.get('keyword'));",
+                  "  pm.expect(json.sections).to.be.an('array').with.lengthOf(3);",
+                  "  const keys = json.sections.map(s => `${s.country_code}/${s.language}`).sort();",
+                  "  pm.expect(keys).to.eql(['CN/zh', 'KR/ko', 'US/en']);",
+                  "});",
+                  "pm.test('Search videos section videos match section country/language', function () {",
+                  "  const json = pm.response.json();",
+                  "  for (const section of json.sections || []) {",
+                  "    for (const video of section.videos || []) {",
+                  "      pm.expect(video.country_code).to.eql(section.country_code);",
+                  "      pm.expect(video.language).to.eql(section.language);",
+                  "      pm.expect(video.video_id).to.be.a('string').and.not.empty;",
+                  "    }",
+                  "  }",
+                  "});",
+                  "const search = pm.response.json();",
+                  "for (const section of search.sections || []) {",
+                  "  const firstVideo = (section.videos || [])[0];",
+                  "  if (firstVideo && firstVideo.video_id) {",
+                  "    pm.environment.set('video_id', firstVideo.video_id);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/kg/search-videos?keyword={{keyword}}&limit=5",
+              "host": ["{{python_base_url}}"],
+              "path": ["kg", "search-videos"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "{{keyword}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Python - Comparison Graph",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('video_id')) {",
+                  "  throw new Error('video_id is empty. Run Python - Search Videos first or set video_id manually.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Comparison graph returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Comparison graph has one source node', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.source_video.video_id).to.eql(pm.environment.get('video_id'));",
+                  "  const sourceNodes = (json.nodes || []).filter(n => n.node_type === 'source');",
+                  "  pm.expect(sourceNodes).to.have.lengthOf(1);",
+                  "});",
+                  "pm.test('Graph nodes include video_id for React routing', function () {",
+                  "  const json = pm.response.json();",
+                  "  for (const node of json.nodes || []) {",
+                  "    pm.expect(node.video_id).to.be.a('string').and.not.empty;",
+                  "  }",
+                  "});",
+                  "pm.test('Graph edges include keywords or reasons when present', function () {",
+                  "  const json = pm.response.json();",
+                  "  for (const edge of json.edges || []) {",
+                  "    const hasKeywords = Array.isArray(edge.keywords) && edge.keywords.length > 0;",
+                  "    const hasReasons = Array.isArray(edge.reasons) && edge.reasons.length > 0;",
+                  "    pm.expect(hasKeywords || hasReasons).to.eql(true);",
+                  "  }",
+                  "});",
+                  "pm.test('Graph edge opinion_distance is non-negative when present', function () {",
+                  "  const json = pm.response.json();",
+                  "  for (const edge of json.edges || []) {",
+                  "    if (edge.opinion_distance !== null && edge.opinion_distance !== undefined) {",
+                  "      pm.expect(edge.opinion_distance).to.be.at.least(0);",
+                  "    }",
+                  "  }",
+                  "});",
+                  "pm.test('Graph edge similarity_score is within [0,1] when present', function () {",
+                  "  const json = pm.response.json();",
+                  "  for (const edge of json.edges || []) {",
+                  "    if (edge.similarity_score !== null && edge.similarity_score !== undefined) {",
+                  "      pm.expect(edge.similarity_score).to.be.at.least(0);",
+                  "      pm.expect(edge.similarity_score).to.be.at.most(1);",
+                  "    }",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/kg/videos/{{video_id}}/comparison-graph?limit_per_country=5",
+              "host": ["{{python_base_url}}"],
+              "path": ["kg", "videos", "{{video_id}}", "comparison-graph"],
+              "query": [
+                {
+                  "key": "limit_per_country",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Spring Proxy",
+      "item": [
+        {
+          "name": "Spring - Comparison Home",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if ([404, 501].includes(pm.response.code)) {",
+                  "  console.warn('Spring proxy endpoint not implemented; skipping structure checks.');",
+                  "} else {",
+                  "  pm.test('Spring comparison home returns success', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "  });",
+                  "  if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.sections).to.be.an('array').with.lengthOf(3);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{spring_base_url}}/api/v1/comparison/home?limit=5",
+              "host": ["{{spring_base_url}}"],
+              "path": ["api", "v1", "comparison", "home"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Spring - Search Videos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if ([404, 501].includes(pm.response.code)) {",
+                  "  console.warn('Spring proxy endpoint not implemented; skipping structure checks.');",
+                  "} else {",
+                  "  pm.test('Spring search videos returns success', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "  });",
+                  "  if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.sections).to.be.an('array').with.lengthOf(3);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{spring_base_url}}/api/v1/comparison/search?keyword={{keyword}}&limit=5",
+              "host": ["{{spring_base_url}}"],
+              "path": ["api", "v1", "comparison", "search"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "{{keyword}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Spring - Comparison Graph",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('video_id')) {",
+                  "  throw new Error('video_id is empty. Run Python - Search Videos first or set video_id manually.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if ([404, 501].includes(pm.response.code)) {",
+                  "  console.warn('Spring proxy endpoint not implemented; skipping structure checks.');",
+                  "} else {",
+                  "  pm.test('Spring comparison graph returns success', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "  });",
+                  "  if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    const sourceNodes = (json.nodes || []).filter(n => n.node_type === 'source');",
+                  "    pm.expect(sourceNodes).to.have.lengthOf(1);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{spring_base_url}}/api/v1/comparison/videos/{{video_id}}/graph?limit_per_country=5",
+              "host": ["{{spring_base_url}}"],
+              "path": ["api", "v1", "comparison", "videos", "{{video_id}}", "graph"],
+              "query": [
+                {
+                  "key": "limit_per_country",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Spring - Video Target",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('video_id')) {",
+                  "  throw new Error('video_id is empty. Run Python - Search Videos first or set video_id manually.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if ([404, 501].includes(pm.response.code)) {",
+                  "  console.warn('Spring target bridge endpoint not implemented; skipping structure checks.');",
+                  "} else {",
+                  "  pm.test('Spring video target returns success', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "  });",
+                  "  if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    const targetId = json.targetId || json.target_id || json.id;",
+                  "    pm.expect(targetId).to.not.be.undefined;",
+                  "    pm.expect(Number(targetId)).to.be.above(0);",
+                  "    pm.environment.set('target_id', String(targetId));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{spring_base_url}}/api/v1/comparison/videos/{{video_id}}/target",
+              "host": ["{{spring_base_url}}"],
+              "path": ["api", "v1", "comparison", "videos", "{{video_id}}", "target"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": []
+}
