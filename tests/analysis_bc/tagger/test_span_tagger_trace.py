@@ -57,6 +57,7 @@ def _build_tagger() -> SpanTagger:
         tagger = SpanTagger()
         tagger._qdrant_healthy = True
         tagger._health_checked_at = float("inf")
+        tagger._gate_load_attempted = True
     return tagger
 
 
@@ -111,3 +112,23 @@ def test_debug_false_keeps_return_contract() -> None:
     assert isinstance(result, list)
     assert len(result) == 1
     assert result[0].matched_word == "분노"
+
+
+def test_trace_records_polarity_mismatch() -> None:
+    tagger = _build_tagger()
+    sentence = _make_sentence(1, "감동적이다")
+
+    tagger.kiwi.tokenize.return_value = [_make_token("감동", "NNG", 0, 2)]
+    hit = _make_qdrant_hit(0.97)
+    hit.payload = {"word": "감동", "polarity": "-1"}
+    tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+    tagger._gate_sentences = MagicMock(return_value={
+        1: MagicMock(gate_passed=True, gate_score=0.9, top_labels=["환영/호의"], skip_reason=None)
+    })
+
+    spans = tagger.tag([sentence], debug=True)
+
+    assert spans == []
+    trace = tagger.last_debug_trace
+    assert trace is not None
+    assert trace.sentences[0].tokens[0].reject_reason == "polarity_mismatch"
