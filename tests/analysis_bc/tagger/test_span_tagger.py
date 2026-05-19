@@ -71,6 +71,7 @@ def mock_tagger() -> SpanTagger:
         # Qdrant 헬스체크 통과 상태로 설정
         tagger._qdrant_healthy = True
         tagger._health_checked_at = float("inf")
+        tagger._gate_load_attempted = True
 
     return tagger
 
@@ -185,3 +186,17 @@ def test_search_emotion_xr_tag_included(mock_tagger: SpanTagger) -> None:
     assert len(result) == 1
     assert result[0].matched_word == "심각"
     assert result[0].label_type == SentenceLabelType.EMOTIONALLY_LOADED
+
+
+def test_gate_failed_sentence_is_skipped(mock_tagger: SpanTagger) -> None:
+    sentence = _make_sentence(1, "분노가 폭발했다")
+    mock_tagger._gate_sentences = MagicMock(return_value={
+        1: MagicMock(gate_passed=False, gate_score=0.1, top_labels=[], skip_reason="low_gate_score")
+    })
+
+    result = mock_tagger.tag([sentence], debug=True)
+
+    assert result == []
+    assert mock_tagger.qdrant.query_batch_points.call_count == 0
+    assert mock_tagger.last_debug_trace is not None
+    assert mock_tagger.last_debug_trace.sentences[0].skip_reason == "low_gate_score"
