@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class ContentService:
-    def get_transcript(self, video_id: str, region_code: str = "US") -> TranscriptResponseDto:
+    def get_transcript(self, video_id: str, region_code: str = "US", priority: bool = False) -> TranscriptResponseDto:
         try:
-            text = load_transcript(video_id, region_code)
+            text = load_transcript(video_id, region_code, priority=priority)
             if not text.strip():
                 logger.warning(
                     "transcript empty after load video_id=%s region=%s",

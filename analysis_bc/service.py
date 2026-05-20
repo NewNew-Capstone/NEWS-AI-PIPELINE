@@ -79,29 +79,34 @@ class AnalysisService:
         )[:FACT_TOP_N]
         print(f"[서비스] FACT 상위 필터링 완료 — {len(top_facts)}개")
 
-        # 요약 생성 (Claude API)
-        print("[서비스] Summarizer 시작")
-        summary = self.summarizer.summarize(
-            fact_sentences=top_facts,
-            opinion_sentences=opinion_sentences,
-            title=request.title,
-            language=request.language,
-        )
-        print("[서비스] Summarizer 완료")
+        # 요약 생성 (Claude API) — priority=True(단건 상세 분석)일 때만 호출
+        if request.priority:
+            print("[서비스] Summarizer 시작 (priority 요청)")
+            summary = self.summarizer.summarize(
+                fact_sentences=top_facts,
+                opinion_sentences=opinion_sentences,
+                title=request.title,
+                language=request.language,
+            )
+            print("[서비스] Summarizer 완료")
 
-        print("[서비스] ScoreReasonSummarizer 시작")
-        score_reason_summary = self.summarizer.summarize_score_reason(
-            overall_bias_score=scores["overall_bias_score"],
-            opinion_score=scores["opinion_score"],
-            emotion_score=scores["emotion_score"],
-            fact_ratio=scores["fact_ratio"],
-            headline_body_gap_score=gap_result.gap_score,
-            score_evidence=scores["score_evidence"],
-            opinion_sentences=opinion_sentences,
-            span_labels=sentence_labels,
-            language=request.language,
-        )
-        print("[서비스] ScoreReasonSummarizer 완료")
+            print("[서비스] ScoreReasonSummarizer 시작")
+            score_reason_summary = self.summarizer.summarize_score_reason(
+                overall_bias_score=scores["overall_bias_score"],
+                opinion_score=scores["opinion_score"],
+                emotion_score=scores["emotion_score"],
+                fact_ratio=scores["fact_ratio"],
+                headline_body_gap_score=gap_result.gap_score,
+                score_evidence=scores["score_evidence"],
+                opinion_sentences=opinion_sentences,
+                span_labels=sentence_labels,
+                language=request.language,
+            )
+            print("[서비스] ScoreReasonSummarizer 완료")
+        else:
+            print("[서비스] Summarizer 스킵 (배치 분석 — priority=False)")
+            summary = {}
+            score_reason_summary = ""
 
         print("[서비스] KeywordExtractor 시작")
         keywords = self.keyword_extractor.extract(
