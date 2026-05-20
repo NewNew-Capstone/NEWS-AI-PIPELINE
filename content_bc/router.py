@@ -9,5 +9,5 @@ router = APIRouter(prefix="/content", tags=["content"])
 
 
 @router.get("/transcript", response_model=TranscriptResponseDto)
-def get_transcript(video_id: str, region_code: str = "US") -> TranscriptResponseDto:
-    return ContentService().get_transcript(video_id, region_code)
+def get_transcript(video_id: str, region_code: str = "US", priority: bool = False) -> TranscriptResponseDto:
+    return ContentService().get_transcript(video_id, region_code, priority=priority)

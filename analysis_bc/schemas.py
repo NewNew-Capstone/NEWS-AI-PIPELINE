@@ -26,6 +26,7 @@ class AnalyzeRequestDto(BaseModel):
     country: str | None = None
     language: str
     sentences: list[SentenceInputDto]
+    priority: bool = False
 
 
 class AnalyzeRawTextRequestDto(BaseModel):
@@ -38,6 +39,7 @@ class AnalyzeRawTextRequestDto(BaseModel):
     target_type: TargetType | None = None
     transcript_id: int | None = None
     country: str | None = None
+    priority: bool = False
 # 출력
 
 class SpanLabelDto(BaseModel):

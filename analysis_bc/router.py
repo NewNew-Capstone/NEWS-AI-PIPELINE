@@ -1,5 +1,6 @@
 from functools import lru_cache
 import logging
+import threading
 
 from fastapi import APIRouter
 
@@ -10,6 +11,9 @@ from analysis_bc.service import AnalysisService
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
 logger = logging.getLogger(__name__)
+
+# 배치 분석은 1개씩만 실행, priority 요청은 바로 통과
+_BG_ANALYSIS_SEMAPHORE = threading.Semaphore(1)
 _request_log_repo = AnalysisRequestLogRepository()
 
 
@@ -90,8 +94,17 @@ def analyze_raw(request: AnalyzeRawTextRequestDto) -> RawAnalysisResultDto:
         transcript_id=request.transcript_id,
         country=request.country,
         sentences=sentences,
+        priority=request.priority,
     )
-    result = get_analysis_service().analyze(analyze_request)
+    if request.priority:
+        print("[분석] priority 요청 — 세마포어 없이 즉시 실행")
+        result = get_analysis_service().analyze(analyze_request)
+    else:
+        print("[분석] 배치 요청 — BG_ANALYSIS_SEMAPHORE 대기 중")
+        with _BG_ANALYSIS_SEMAPHORE:
+            print("[분석] 배치 요청 — 세마포어 획득, 분석 시작")
+            result = get_analysis_service().analyze(analyze_request)
+        print("[분석] 배치 요청 — 세마포어 반환 완료")
     sentence_results = [
         SentenceResultDto(
             content_sentence_id=s.content_sentence_id,

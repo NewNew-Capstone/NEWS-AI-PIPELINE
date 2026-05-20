@@ -218,4 +218,4 @@ analysis_bc/data/anonymous_patterns.json
 # Local runtime/request logs
 logs/
 
-cc.ko.300.bin
+cc.ko.300.binanalysis_bc/data/eval/raw/

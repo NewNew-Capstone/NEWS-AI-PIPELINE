@@ -1,12 +1,16 @@
 import logging
+import os
+import re
+import tempfile
 import threading
-
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import NoTranscriptFound, NotTranslatable
+import time
+import yt_dlp
 from deep_translator import GoogleTranslator
 
-# router.py가 sync def → FastAPI가 스레드풀에서 실행하므로 threading.Semaphore 사용
-_TRANSCRIPT_SEMAPHORE = threading.Semaphore(2)
+# 백그라운드 배치용: 동시 1개 + 3초 딜레이
+_TRANSCRIPT_SEMAPHORE = threading.Semaphore(1)
+# 단건 우선순위용: 백그라운드와 독립적으로 실행
+_PRIORITY_SEMAPHORE = threading.Semaphore(1)
 
 LANG_MAP = {
     "KR": ["ko", "ko-KR"],
@@ -15,7 +19,6 @@ LANG_MAP = {
 }
 
 MAX_CHUNK = 4500
-FALLBACK_LANGS = ["ko", "en", "ko-KR", "en-US"]
 logger = logging.getLogger(__name__)
 
 
@@ -41,35 +44,74 @@ def _translate_to_korean(text: str) -> str:
     return " ".join(translated)
 
 
-def load_transcript(video_id: str, region_code: str = "US") -> str:
-    with _TRANSCRIPT_SEMAPHORE:
-        normalized_region = (region_code or "US").upper()
-        preferred = LANG_MAP.get(normalized_region, ["en"])
-        langs = list(dict.fromkeys(preferred + FALLBACK_LANGS))
-        ytt = YouTubeTranscriptApi()
-        try:
-            transcript = ytt.fetch(video_id, languages=langs)
-        except NoTranscriptFound:
-            # 마지막 fallback: 언어 우선순위 없이 유튜브가 제공하는 기본 자막 시도
-            transcript = ytt.fetch(video_id)
+def _parse_vtt(vtt_text: str) -> list[str]:
+    vtt_text = re.sub(r"<[^>]+>", "", vtt_text)
+    lines = vtt_text.splitlines()
+    segments = []
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("WEBVTT") or "-->" in line or line.isdigit():
+            continue
+        segments.append(line)
+    return segments
 
-        if normalized_region != "KR":
+
+def load_transcript(video_id: str, region_code: str = "US", priority: bool = False) -> str:
+    semaphore = _PRIORITY_SEMAPHORE if priority else _TRANSCRIPT_SEMAPHORE
+    with semaphore:
+        if not priority:
+            time.sleep(3)  # 백그라운드 배치만 딜레이, 우선순위 요청은 즉시 실행
+
+        langs = LANG_MAP.get(region_code, ["en"])
+        url = f"https://www.youtube.com/watch?v={video_id}"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cookie_path = os.environ.get("YOUTUBE_COOKIE_PATH", "")
+            ydl_opts = {
+                "skip_download": True,
+                "writeautomaticsub": True,
+                "writesubtitles": True,
+                "subtitleslangs": langs,
+                "subtitlesformat": "vtt",
+                "outtmpl": os.path.join(tmpdir, "%(id)s.%(ext)s"),
+                "quiet": True,
+                "no_warnings": True,
+                "ignore_no_formats_error": True,
+                "sleep_interval": 2,
+                "sleep_interval_requests": 1,
+            }
+            if cookie_path and os.path.exists(cookie_path):
+                ydl_opts["cookiefile"] = cookie_path
+                logger.info("쿠키 파일 적용: %s", cookie_path)
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+
+            vtt_files = [f for f in os.listdir(tmpdir) if f.endswith(".vtt")]
+            if not vtt_files:
+                raise ValueError(f"자막 없음: video_id={video_id}, region={region_code}")
+
+            selected = None
+            for lang in langs:
+                for f in vtt_files:
+                    if lang in f:
+                        selected = f
+                        break
+                if selected:
+                    break
+            if not selected:
+                selected = vtt_files[0]
+
+            with open(os.path.join(tmpdir, selected), "r", encoding="utf-8") as f:
+                raw_text = f.read()
+
+        segments = _parse_vtt(raw_text)
+        text = _deduplicate(segments)
+
+        if region_code != "KR":
             try:
-                translated = transcript.translate("ko")
-                segments = [t.text for t in translated]
-            except NotTranslatable:
-                raw = _deduplicate([t.text for t in transcript])
-                return _translate_to_korean(raw)
+                return _translate_to_korean(text)
             except Exception:
-                logger.warning(
-                    "transcript.translate failed; fallback to deep translator video_id=%s region=%s",
-                    video_id,
-                    normalized_region,
-                    exc_info=True,
-                )
-                raw = _deduplicate([t.text for t in transcript])
-                return _translate_to_korean(raw)
-        else:
-            segments = [t.text for t in transcript]
+                return text
 
-        return _deduplicate(segments)
+        return text
