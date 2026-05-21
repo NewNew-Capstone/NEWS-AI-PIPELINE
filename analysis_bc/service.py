@@ -9,6 +9,8 @@ from analysis_bc.summarizer import BiasSummarizer
 from analysis_bc.schemas import (
     AnalyzeRequestDto,
     BiasAnalysisResultDto,
+    ScoreReasonRequestDto,
+    SummaryRequestDto,
     SentenceInputDto,
 )
 from analysis_bc.tagger.span_tagger import SpanTagger
@@ -106,7 +108,14 @@ class AnalysisService:
         else:
             print("[서비스] Summarizer 스킵 (배치 분석 — priority=False)")
             summary = {}
-            score_reason_summary = ""
+            score_reason_summary = self.summarizer.build_score_reason_fallback(
+                overall_bias_score=scores["overall_bias_score"],
+                opinion_score=scores["opinion_score"],
+                emotion_score=scores["emotion_score"],
+                fact_ratio=scores["fact_ratio"],
+                headline_body_gap_score=gap_result.gap_score,
+                score_evidence=scores["score_evidence"],
+            )
 
         print("[서비스] KeywordExtractor 시작")
         keywords = self.keyword_extractor.extract(
@@ -168,6 +177,45 @@ class AnalysisService:
             sentence_labels=sentence_labels,
             evidences=evidences,
         )
+
+    def summarize_score_reason_only(self, request: ScoreReasonRequestDto) -> str:
+        return self.summarizer.summarize_score_reason(
+            overall_bias_score=request.overall_bias_score,
+            opinion_score=request.opinion_score,
+            emotion_score=request.emotion_score,
+            fact_ratio=request.fact_ratio,
+            headline_body_gap_score=request.headline_body_gap_score,
+            score_evidence=request.score_evidence,
+            opinion_sentences=[],
+            span_labels=[],
+            language=request.language,
+        )
+
+    def summarize_text_only(self, request: SummaryRequestDto) -> str:
+        sentences = self.prepare_sentences(
+            self._split_raw_text(request.raw_text, request.language),
+            request.language,
+        )
+        classified = self.classifier.classify(sentences)
+        fact_sentences = [s for s in classified if s.label == "fact_like"]
+        opinion_sentences = [s for s in classified if s.label == "opinion_like"]
+        top_facts = sorted(
+            fact_sentences,
+            key=lambda s: s.confidence,
+            reverse=True,
+        )[:10]
+        summary = self.summarizer.summarize(
+            fact_sentences=top_facts,
+            opinion_sentences=opinion_sentences,
+            title=request.title,
+            language=request.language,
+        )
+        return str(summary.get("summary_text", "")).strip()
+
+    def _split_raw_text(self, raw_text: str, language: str) -> list[SentenceInputDto]:
+        from analysis_bc.preprocessor import split_into_sentences
+
+        return split_into_sentences(raw_text, language)
 
     def prepare_sentences(
         self, sentences: list[SentenceInputDto], language: str

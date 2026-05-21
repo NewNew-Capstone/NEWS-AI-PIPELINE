@@ -122,6 +122,25 @@ class BiasSummarizer:
             logger.error("summarize_score_reason failed: %s", type(e).__name__, exc_info=True)
             return fallback
 
+    def build_score_reason_fallback(
+        self,
+        *,
+        overall_bias_score: float,
+        opinion_score: float,
+        emotion_score: float,
+        fact_ratio: float,
+        headline_body_gap_score: float | None = None,
+        score_evidence: str = "",
+    ) -> str:
+        return self._build_score_reason_fallback(
+            overall_bias_score=overall_bias_score,
+            opinion_score=opinion_score,
+            emotion_score=emotion_score,
+            fact_ratio=fact_ratio,
+            headline_body_gap_score=headline_body_gap_score,
+            score_evidence=score_evidence,
+        )
+
     # ------------------------------------------------------------------
     # private helpers
     # ------------------------------------------------------------------
@@ -169,6 +188,21 @@ JSON 형식으로만 응답해줘.
         span_labels: list[SpanLabelDto],
         language: str,
     ) -> str:
+        subjectivity_points = round(overall_bias_score * 100)
+        opinion_percent = round(opinion_score * 100)
+        emotion_percent = round(emotion_score * 100)
+        fact_percent = round(fact_ratio * 100)
+        if subjectivity_points <= 20:
+            score_band = "주관적 표현이 낮은 구간"
+        elif subjectivity_points <= 40:
+            score_band = "약간의 해석이 있는 구간"
+        elif subjectivity_points <= 60:
+            score_band = "의견과 정보가 섞여 있는 중간 구간"
+        elif subjectivity_points <= 80:
+            score_band = "주관적 표현이 많은 구간"
+        else:
+            score_band = "감정적이거나 주장형 표현이 강한 구간"
+
         opinion_text = "\n".join(
             f"- {s.sentence_text} (confidence={s.confidence:.4f})"
             for s in opinion_sentences[:5]
@@ -181,46 +215,56 @@ JSON 형식으로만 응답해줘.
                 SentenceLabelType.EMOTIONALLY_LOADED.value,
             )
         )
-        gap_text = (
-            "정보 없음"
-            if headline_body_gap_score is None
-            else f"{headline_body_gap_score:.4f}"
-        )
-
         return f"""
-뉴스 편향 분석 점수의 산출 근거를 사용자에게 설명해줘.
+뉴스 영상의 주관성 점수 근거를 사용자에게 설명해줘.
+사용자가 "왜 이 영상이 이 주관성 점수를 받았는지" 쉽게 이해할 수 있도록 자연스럽게 작성해.
 반드시 아래 제공된 점수와 근거만 사용하고, 새로운 사실이나 원인을 추론하지 마.
-제목-본문 괴리 점수는 현재 overall_bias_score 산식에 직접 포함되지 않는 별도 참고 지표라고 설명해.
 
 [언어]
 {language}
 
-[산식]
-overall_bias_score = 0.4 * opinion_score + 0.3 * emotion_score + 0.3 * (1 - fact_ratio)
+[용어 해석]
+- overall_bias_score는 사용자에게 "주관성 점수"라고 설명해.
+- opinion_score는 "보도자의 해석이나 주장이 들어간 문장 비율"을 의미해.
+- emotion_score는 "의견 문장 안에서 감정이 실린 표현의 정도"를 의미해.
+- fact_ratio는 "사실을 전달하는 문장 비율"을 의미해.
 
 [점수]
-- overall_bias_score: {overall_bias_score:.4f}
-- opinion_score: {opinion_score:.4f}
-- emotion_score: {emotion_score:.4f}
-- fact_ratio: {fact_ratio:.4f}
-- headline_body_gap_score: {gap_text}
+- 주관성 점수: {subjectivity_points}점 / 100점 ({score_band})
+- 보도자의 해석이나 주장이 들어간 문장 비율: {opinion_percent}%
+- 의견 문장 안에서 감정이 실린 표현 정도: {emotion_percent}%
+- 사실을 전달하는 문장 비율: {fact_percent}%
 
-[산식 기반 근거]
+[주관성 점수 구간 기준]
+- 0~20점: 주관적 표현이 낮음
+- 21~40점: 약간의 해석이 있음
+- 41~60점: 의견과 정보가 섞여 있음
+- 61~80점: 주관적 표현이 많음
+- 81~100점: 감정적이거나 주장형 표현이 강함
+
+[자동 추출 근거]
 {score_evidence}
 
-[주요 주관적 문장]
+[보도자의 해석이나 주장이 들어간 문장 예시]
 {opinion_text}
 
-[감정 표현 근거]
+[감정이 실린 표현 예시]
 {emotion_text}
 
 아래 조건을 지켜 JSON 형식으로만 응답해줘.
-- score_reason_summary는 한국어 2~4문장
-- 수식이 어떤 구성 점수로 0~1 사이의 최종 점수로 합산되는지 쉽게 설명
-- 숫자는 제공된 값을 그대로 사용
+- score_reason_summary는 한국어 2~3문장
+- 사용자가 읽기 쉬운 자연스러운 설명체로 작성
+- "전체 편향 점수", "편향 점수"라는 표현은 쓰지 말고 반드시 "주관성 점수"라고 표현
+- overall_bias_score, opinion_score, emotion_score, fact_ratio 같은 내부 변수명은 절대 사용하지 않기
+- "주관성", "감정성", "사실비중" 같은 딱딱한 분석 용어도 되도록 사용하지 않기
+- 산식, 가중치, 제목-본문 괴리 점수는 언급하지 않기
+- 숫자는 꼭 필요할 때만 퍼센트로 간단히 표현
+- 첫 문장은 반드시 위 주관성 점수 구간 기준과 일치하게 설명
+- 41~60점 구간은 "낮은 편"이라고 표현하지 말고, "의견과 정보가 섞여 있는 수준" 또는 "중간 수준"이라고 설명
+- 이어서 보도자의 해석이나 주장, 감정이 실린 표현, 사실 전달 문장 중 점수에 영향을 준 핵심 이유를 설명
 
 {{
-  "score_reason_summary": "전체 편향 점수 산출 근거 설명"
+  "score_reason_summary": "사용자 친화적인 주관성 점수 근거 설명"
 }}
 """.strip()
 
@@ -234,20 +278,39 @@ overall_bias_score = 0.4 * opinion_score + 0.3 * emotion_score + 0.3 * (1 - fact
         headline_body_gap_score: float | None,
         score_evidence: str,
     ) -> str:
-        fact_gap = 1 - fact_ratio
-        summary = (
-            "전체 편향 점수는 의견성 점수 40%, 감정성 점수 30%, "
-            "사실 기반 문장이 부족한 정도 30%를 더해 계산됩니다. "
-            f"이번 결과는 opinion_score {opinion_score:.4f}, "
-            f"emotion_score {emotion_score:.4f}, "
-            f"1 - fact_ratio {fact_gap:.4f}를 반영해 "
-            f"overall_bias_score {overall_bias_score:.4f}로 산출되었습니다."
-        )
-        if score_evidence:
-            summary += f" 주요 근거는 {score_evidence}"
-        if headline_body_gap_score is not None:
-            summary += (
-                f" 제목-본문 괴리 점수 {headline_body_gap_score:.4f}는 "
-                "최종 산식에는 직접 포함되지 않는 별도 참고 지표입니다."
-            )
-        return summary
+        subjectivity_points = round(overall_bias_score * 100)
+        if subjectivity_points <= 20:
+            level_sentence = "이 영상은 사실을 전달하는 문장이 비교적 많아 주관성 점수가 낮은 편입니다."
+        elif subjectivity_points <= 40:
+            level_sentence = "이 영상은 일부 문장에서 보도자의 해석이나 주장이 나타나 주관성 점수가 약간 있는 편입니다."
+        elif subjectivity_points <= 60:
+            level_sentence = "이 영상은 사실 전달과 보도자의 해석이나 주장이 함께 나타나 주관성 점수가 중간 수준입니다."
+        elif subjectivity_points <= 80:
+            level_sentence = "이 영상은 보도자의 해석이나 주장이 드러나는 문장이 많아 주관성 점수가 높은 편입니다."
+        else:
+            level_sentence = "이 영상은 감정적이거나 주장형 표현이 강하게 나타나 주관성 점수가 매우 높은 편입니다."
+
+        reason_parts: list[str] = []
+        if opinion_score >= 0.45:
+            reason_parts.append("보도자의 해석이나 주장이 들어간 문장이 여러 곳에서 확인되어 점수에 크게 반영되었습니다.")
+        elif opinion_score >= 0.15:
+            reason_parts.append("일부 문장에서 보도자의 해석이나 주장이 섞여 점수에 반영되었습니다.")
+        else:
+            reason_parts.append("보도자의 해석이나 주장이 들어간 문장은 많지 않았습니다.")
+
+        if fact_ratio >= 0.7:
+            reason_parts.append("대부분은 사실 전달 중심이라 점수가 크게 높아지지는 않았습니다.")
+        elif fact_ratio >= 0.4:
+            reason_parts.append("사실 전달 문장도 함께 있어 점수가 중간 수준으로 조정되었습니다.")
+        else:
+            reason_parts.append("사실 전달보다 해석이나 주장으로 읽히는 흐름이 더 강하게 나타났습니다.")
+
+        if emotion_score > 0:
+            if emotion_score >= 0.2:
+                reason_parts.append("의견 문장 안에서 감정이 실린 표현도 함께 감지되어 주관성 점수를 높였습니다.")
+            else:
+                reason_parts.append("감정이 실린 표현은 일부만 감지되어 점수에는 제한적으로 반영되었습니다.")
+        else:
+            reason_parts.append("감정이 실린 표현은 거의 감지되지 않아 점수를 크게 높이지 않았습니다.")
+
+        return f"{level_sentence} {' '.join(reason_parts)}"

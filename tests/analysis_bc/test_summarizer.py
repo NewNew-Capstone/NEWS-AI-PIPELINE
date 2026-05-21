@@ -19,7 +19,7 @@ _MOCK_JSON = {
 }
 _MOCK_TEXT = json.dumps(_MOCK_JSON, ensure_ascii=False)
 _MOCK_SCORE_REASON_JSON = {
-    "score_reason_summary": "전체 편향 점수는 의견성, 감정성, 사실 문장 부족도를 가중합해 계산됩니다."
+    "score_reason_summary": "이 영상은 보도자의 해석이나 주장이 일부 포함되어 주관성 점수가 보통 수준입니다."
 }
 _MOCK_SCORE_REASON_TEXT = json.dumps(_MOCK_SCORE_REASON_JSON, ensure_ascii=False)
 
@@ -184,10 +184,12 @@ class TestBiasSummarizer:
             language="ko",
         )
 
-        assert "overall_bias_score 0.4362" in result
-        assert "최종 산식에는 직접 포함되지 않는 별도 참고 지표" in result
+        assert "주관성 점수" in result
+        assert "보도자의 해석이나 주장" in result
+        assert "overall_bias_score" not in result
+        assert "제목-본문 괴리" not in result
 
-    def test_summarize_score_reason_prompt_includes_formula_and_scores(self) -> None:
+    def test_summarize_score_reason_prompt_uses_user_friendly_terms(self) -> None:
         mock_msg = _make_mock_response(_MOCK_SCORE_REASON_TEXT)
         with patch("analysis_bc.summarizer.Anthropic") as MockClient:
             MockClient.return_value.messages.create.return_value = mock_msg
@@ -206,7 +208,25 @@ class TestBiasSummarizer:
             call_args = MockClient.return_value.messages.create.call_args
 
         prompt: str = call_args.kwargs["messages"][0]["content"]
-        assert "overall_bias_score = 0.4 * opinion_score" in prompt
-        assert "overall_bias_score: 0.4362" in prompt
-        assert "opinion_score: 0.5000" in prompt
-        assert "fact_ratio: 0.3300" in prompt
+        assert "주관성 점수: 44점 / 100점" in prompt
+        assert "의견과 정보가 섞여 있는 중간 구간" in prompt
+        assert "보도자의 해석이나 주장이 들어간 문장 비율: 50%" in prompt
+        assert "사실을 전달하는 문장 비율: 33%" in prompt
+        assert "41~60점: 의견과 정보가 섞여 있음" in prompt
+        assert '41~60점 구간은 "낮은 편"이라고 표현하지 말고' in prompt
+        assert "overall_bias_score = 0.4 * opinion_score" not in prompt
+        assert "전체 편향 점수" in prompt
+        assert "제목-본문 괴리 점수는 언급하지 않기" in prompt
+
+    def test_score_reason_fallback_uses_score_band_boundaries(self) -> None:
+        summarizer = _make_mock_summarizer()
+
+        result = summarizer.build_score_reason_fallback(
+            overall_bias_score=0.41,
+            opinion_score=0.5,
+            emotion_score=0.19,
+            fact_ratio=0.5,
+        )
+
+        assert "중간 수준" in result
+        assert "낮은 편" not in result
