@@ -211,9 +211,8 @@ __marimo__/
 
 # ML model weights
 analysis_bc/models/
-analysis_bc/data/*.bin
-analysis_bc/data/mrc_news/
-analysis_bc/data/anonymous_patterns.json
+analysis_bc/data/*
+
 
 # Local runtime/request logs
 logs/

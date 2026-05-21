@@ -65,6 +65,18 @@ def _write_json(path: Path, data: Any) -> None:
         f.write("\n")
 
 
+def _gap_score_value(gap: Any) -> float:
+    """TitleBodyGapCalculator 반환값 호환 처리.
+
+    과거에는 float, 현재는 GapResult 객체를 반환할 수 있다.
+    """
+    if isinstance(gap, (int, float)):
+        return float(gap)
+    if hasattr(gap, "gap_score"):
+        return float(gap.gap_score)
+    raise TypeError(f"Unsupported gap value type: {type(gap)!r}")
+
+
 def _load_articles(limit_per_dataset: int | None = None) -> list[dict[str, Any]]:
     # A는 "편향 점수가 높아야 하는" 사설/의견성 극단 케이스,
     # B는 "편향 점수가 낮아야 하는" 정책/공적 자막 극단 케이스로 본다.
@@ -173,10 +185,11 @@ def _build_snapshot(
 
         # 5. 제목-본문 gap을 계산한다. 현재 scorer 최종 산식에는 직접 들어가지 않지만,
         #    결과 응답과 score_evidence 생성에 쓰이므로 snapshot에 함께 저장한다.
-        headline_body_gap = gap_calculator.calculate(
+        headline_body_gap_raw = gap_calculator.calculate(
             title=article["title"],
             sentences=sentences,
         )
+        headline_body_gap = _gap_score_value(headline_body_gap_raw)
 
         # 6. 가중치가 바뀌어도 변하지 않는 중간 결과만 저장한다.
         #    이후 snapshot 모드에서는 이 값들로 scorer만 다시 돌린다.
