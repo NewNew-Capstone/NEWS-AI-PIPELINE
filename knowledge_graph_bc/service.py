@@ -251,19 +251,19 @@ class KnowledgeGraphComparisonService:
                    [x IN (
                      collect(DISTINCT CASE
                        WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                       THEN properties(i) + {cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                       THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
                      END) +
                      collect(DISTINCT CASE
                        WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                       THEN properties(legacy_i) + {cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                       THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
                      END) +
                      collect(DISTINCT CASE
                        WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                       THEN properties(ic) + {cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                       THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
                      END) +
                      collect(DISTINCT CASE
                        WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                       THEN properties(inode) + {cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                       THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
                      END)
                    ) WHERE x IS NOT NULL] AS issue_props,
                    collect(DISTINCT properties(a)) AS analysis_props
@@ -289,19 +289,19 @@ class KnowledgeGraphComparisonService:
                  [x IN (
                    collect(DISTINCT CASE
                      WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                     THEN properties(i) + {cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                     THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
                    END) +
                    collect(DISTINCT CASE
                      WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                     THEN properties(legacy_i) + {cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                     THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
                    END) +
                    collect(DISTINCT CASE
                      WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                     THEN properties(ic) + {cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                     THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
                    END) +
                    collect(DISTINCT CASE
                      WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                     THEN properties(inode) + {cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                     THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
                    END)
                  ) WHERE x IS NOT NULL] AS issue_props,
                  collect(DISTINCT properties(c)) +
@@ -346,19 +346,19 @@ class KnowledgeGraphComparisonService:
                    [x IN (
                      collect(DISTINCT CASE
                        WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                       THEN properties(i) + {cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                       THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
                      END) +
                      collect(DISTINCT CASE
                        WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                       THEN properties(legacy_i) + {cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                       THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
                      END) +
                      collect(DISTINCT CASE
                        WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                       THEN properties(ic) + {cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                       THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
                      END) +
                      collect(DISTINCT CASE
                        WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                       THEN properties(inode) + {cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                       THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
                      END)
                    ) WHERE x IS NOT NULL] AS issue_props,
                    CASE
@@ -401,19 +401,19 @@ class KnowledgeGraphComparisonService:
                  [x IN (
                    collect(DISTINCT CASE
                      WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                     THEN properties(i) + {cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                     THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
                    END) +
                    collect(DISTINCT CASE
                      WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                     THEN properties(legacy_i) + {cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                     THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
                    END) +
                    collect(DISTINCT CASE
                      WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                     THEN properties(ic) + {cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                     THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
                    END) +
                    collect(DISTINCT CASE
                      WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                     THEN properties(inode) + {cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                     THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
                    END)
                  ) WHERE x IS NOT NULL] AS issue_props,
                  collect(DISTINCT properties(c)) +
