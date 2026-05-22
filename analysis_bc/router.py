@@ -1,6 +1,7 @@
 from functools import lru_cache
 import logging
 import threading
+import time
 
 from fastapi import APIRouter
 
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 # 배치 분석은 1개씩만 실행, priority 요청은 바로 통과
 _BG_ANALYSIS_SEMAPHORE = threading.Semaphore(1)
+# priority 분석이 실행 중일 때 True — 배치 분석은 이 플래그가 내려갈 때까지 대기
+_PRIORITY_ACTIVE = threading.Event()
 _request_log_repo = AnalysisRequestLogRepository()
 
 
@@ -107,14 +110,32 @@ def analyze_raw(request: AnalyzeRawTextRequestDto) -> RawAnalysisResultDto:
         priority=request.priority,
     )
     if request.priority:
-        print("[분석] priority 요청 — 세마포어 없이 즉시 실행")
-        result = get_analysis_service().analyze(analyze_request)
-    else:
-        print("[분석] 배치 요청 — BG_ANALYSIS_SEMAPHORE 대기 중")
-        with _BG_ANALYSIS_SEMAPHORE:
-            print("[분석] 배치 요청 — 세마포어 획득, 분석 시작")
+        # priority: 세마포어 없이 즉시 실행 + 플래그 ON → 신규 배치 분석 블로킹
+        logger.info("[분석] priority 요청 — 즉시 실행, 신규 배치 분석 대기 처리")
+        _PRIORITY_ACTIVE.set()
+        try:
             result = get_analysis_service().analyze(analyze_request)
-        print("[분석] 배치 요청 — 세마포어 반환 완료")
+        finally:
+            _PRIORITY_ACTIVE.clear()
+            logger.info("[분석] priority 완료 — 배치 분석 재개 허용")
+    else:
+        # 배치: priority 분석 중이면 완료될 때까지 대기 후 세마포어 획득
+        wait_count = 0
+        while _PRIORITY_ACTIVE.is_set():
+            if wait_count == 0:
+                logger.info("[분석] 배치 대기 — priority 분석 완료 후 시작 예정")
+            time.sleep(1)
+            wait_count += 1
+
+        logger.info("[분석] 배치 요청 — BG_ANALYSIS_SEMAPHORE 대기 중")
+        with _BG_ANALYSIS_SEMAPHORE:
+            # 세마포어 획득 후 priority가 새로 들어왔으면 다시 대기
+            while _PRIORITY_ACTIVE.is_set():
+                logger.info("[분석] 배치 세마포어 보유 중 priority 감지 — 완료 대기")
+                time.sleep(1)
+            logger.info("[분석] 배치 요청 — 세마포어 획득, 분석 시작")
+            result = get_analysis_service().analyze(analyze_request)
+        logger.info("[분석] 배치 요청 — 세마포어 반환 완료")
     sentence_results = [
         SentenceResultDto(
             content_sentence_id=s.content_sentence_id,
