@@ -6,7 +6,17 @@ from fastapi import APIRouter
 
 from analysis_bc.preprocessor import split_into_sentences
 from analysis_bc.request_log_repository import AnalysisRequestLogRepository
-from analysis_bc.schemas import AnalyzeRequestDto, AnalyzeRawTextRequestDto, BiasAnalysisResultDto, RawAnalysisResultDto, SentenceResultDto
+from analysis_bc.schemas import (
+    AnalyzeRequestDto,
+    AnalyzeRawTextRequestDto,
+    BiasAnalysisResultDto,
+    RawAnalysisResultDto,
+    ScoreReasonRequestDto,
+    ScoreReasonResponseDto,
+    SentenceResultDto,
+    SummaryRequestDto,
+    SummaryResponseDto,
+)
 from analysis_bc.service import AnalysisService
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
@@ -114,3 +124,28 @@ def analyze_raw(request: AnalyzeRawTextRequestDto) -> RawAnalysisResultDto:
         for s in sentences
     ]
     return RawAnalysisResultDto(**result.model_dump(), sentences=sentence_results)
+
+
+@router.post("/score-reason", response_model=ScoreReasonResponseDto)
+def summarize_score_reason(request: ScoreReasonRequestDto) -> ScoreReasonResponseDto:
+    print("=== [/analyze/score-reason] 받은 요청 ===")
+    print(
+        f"target_id={request.target_id}, language={request.language}, "
+        f"overall={request.overall_bias_score:.4f}, opinion={request.opinion_score:.4f}, "
+        f"emotion={request.emotion_score:.4f}"
+    )
+    print("======================================")
+    summary = get_analysis_service().summarize_score_reason_only(request)
+    return ScoreReasonResponseDto(score_reason_summary=summary)
+
+
+@router.post("/summary", response_model=SummaryResponseDto)
+def summarize_text(request: SummaryRequestDto) -> SummaryResponseDto:
+    print("=== [/analyze/summary] 받은 요청 ===")
+    print(
+        f"target_id={request.target_id}, title={request.title}, "
+        f"language={request.language}, raw_text_len={len(request.raw_text)}"
+    )
+    print("===================================")
+    summary_text = get_analysis_service().summarize_text_only(request)
+    return SummaryResponseDto(summary_text=summary_text)

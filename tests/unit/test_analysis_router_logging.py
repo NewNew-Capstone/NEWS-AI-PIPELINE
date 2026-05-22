@@ -3,7 +3,13 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import analysis_bc.router as router_mod
-from analysis_bc.schemas import AnalyzeRawTextRequestDto, AnalyzeRequestDto, SentenceInputDto
+from analysis_bc.schemas import (
+    AnalyzeRawTextRequestDto,
+    AnalyzeRequestDto,
+    ScoreReasonRequestDto,
+    SentenceInputDto,
+    SummaryRequestDto,
+)
 
 
 def _make_analyze_request() -> AnalyzeRequestDto:
@@ -77,3 +83,42 @@ def test_analyze_raw_continues_when_log_insert_fails() -> None:
 
     assert result.target_id == 1
     assert mock_service.analyze.call_count == 1
+
+
+def test_summarize_score_reason_calls_service_only() -> None:
+    request = ScoreReasonRequestDto(
+        target_id=1,
+        language="ko",
+        overall_bias_score=0.16,
+        opinion_score=0.22,
+        emotion_score=0.03,
+        fact_ratio=0.78,
+        score_evidence="전체 문장 중 22%가 주관적 문장입니다.",
+    )
+
+    mock_service = MagicMock()
+    mock_service.summarize_score_reason_only.return_value = "주관성 점수가 낮은 편입니다."
+
+    with patch("analysis_bc.router.get_analysis_service", return_value=mock_service):
+        result = router_mod.summarize_score_reason(request)
+
+    assert result.score_reason_summary == "주관성 점수가 낮은 편입니다."
+    mock_service.summarize_score_reason_only.assert_called_once_with(request)
+
+
+def test_summarize_text_calls_service_only() -> None:
+    request = SummaryRequestDto(
+        target_id=1,
+        title="제목",
+        language="ko",
+        raw_text="첫 문장입니다. 둘째 문장입니다.",
+    )
+
+    mock_service = MagicMock()
+    mock_service.summarize_text_only.return_value = "요약 문장입니다."
+
+    with patch("analysis_bc.router.get_analysis_service", return_value=mock_service):
+        result = router_mod.summarize_text(request)
+
+    assert result.summary_text == "요약 문장입니다."
+    mock_service.summarize_text_only.assert_called_once_with(request)

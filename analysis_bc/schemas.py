@@ -40,6 +40,32 @@ class AnalyzeRawTextRequestDto(BaseModel):
     transcript_id: int | None = None
     country: str | None = None
     priority: bool = False
+
+
+class ScoreReasonRequestDto(BaseModel):
+    target_id: int | None = None
+    language: str = "ko"
+    overall_bias_score: float
+    opinion_score: float
+    emotion_score: float
+    fact_ratio: float = 0.0
+    headline_body_gap_score: float | None = None
+    score_evidence: str = ""
+
+
+class ScoreReasonResponseDto(BaseModel):
+    score_reason_summary: str
+
+
+class SummaryRequestDto(BaseModel):
+    target_id: int | None = None
+    title: str
+    language: str = "ko"
+    raw_text: str
+
+
+class SummaryResponseDto(BaseModel):
+    summary_text: str
 # 출력
 
 class SpanLabelDto(BaseModel):
