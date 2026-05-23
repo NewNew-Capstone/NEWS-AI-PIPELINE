@@ -34,6 +34,7 @@ from analysis_bc.config import (
 from analysis_bc.enums import SentenceLabelType
 from analysis_bc.score_utils import normalize_score
 from analysis_bc.schemas import SpanLabelDto
+from analysis_bc.tagger.emotion_stopwords import is_blocked_emotion_stopword
 
 _FASTTEXT_SERVER_URL: str = os.getenv("FASTTEXT_SERVER_URL", "").strip().rstrip("/")
 
@@ -42,7 +43,8 @@ logger = logging.getLogger(__name__)
 _HEALTH_CHECK_TTL = 30.0
 _MAX_LENGTH = 192
 
-_VALID_POS: frozenset[str] = frozenset({"NNG", "NNP", "VV", "VA", "MAG", "XR"})
+_VALID_POS: frozenset[str] = frozenset({"NNG", "VV", "VA", "MAG", "XR"})
+_PROPER_NOUN_POS: frozenset[str] = frozenset({"NNP"})
 
 KOTE_LABELS = [
     "불평/불만", "환영/호의", "감동/감탄", "지긋지긋", "고마움", "슬픔", "화남/분노", "존경", "기대감",
@@ -66,6 +68,27 @@ POSITIVE_LABELS = {
 }
 
 
+def _hit_clean_seed(hit: object) -> str:
+    payload = getattr(hit, "payload", None) or {}
+    for key in ("clean_seed", "embed_text", "word_root", "word"):
+        value = payload.get(key)
+        if value:
+            return str(value)
+    return str(id(hit))
+
+
+def _dedupe_hits_by_clean_seed(hits: list) -> list:
+    deduped = []
+    seen: set[str] = set()
+    for hit in hits:
+        key = _hit_clean_seed(hit)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(hit)
+    return deduped
+
+
 RejectReason = Literal[
     "invalid_pos",
     "too_short",
@@ -74,6 +97,8 @@ RejectReason = Literal[
     "below_threshold",
     "polarity_mismatch",
     "low_gate_score",
+    "blocked_stopword",
+    "proper_noun",
 ]
 
 
@@ -342,10 +367,14 @@ class SpanTagger:
                 start=t.start,
                 length=t.len,
             )
-            if t.tag not in _VALID_POS:
+            if t.tag in _PROPER_NOUN_POS:
+                trace.reject_reason = "proper_noun"
+            elif t.tag not in _VALID_POS:
                 trace.reject_reason = "invalid_pos"
             elif len(t.form) < 2:
                 trace.reject_reason = "too_short"
+            elif is_blocked_emotion_stopword(surface, t.form):
+                trace.reject_reason = "blocked_stopword"
             else:
                 valid_tokens.append(t)
             token_traces.append(trace)
@@ -419,6 +448,7 @@ class SpanTagger:
             else:
                 filtered_hits = hits
 
+            filtered_hits = _dedupe_hits_by_clean_seed(filtered_hits)
             if not filtered_hits:
                 if debug and trace is not None:
                     if not hits:
