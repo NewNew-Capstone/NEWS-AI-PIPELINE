@@ -24,15 +24,21 @@ from analysis_bc.config import (
 )
 from analysis_bc.enums import SentenceLabelType
 from analysis_bc.schemas import SpanLabelDto
+from analysis_bc.tagger.emotion_stopwords import (
+    EMOTION_STOPWORDS as STOPWORDS,
+    is_blocked_emotion_stopword,
+)
 
 _FASTTEXT_SERVER_URL = os.getenv("FASTTEXT_SERVER_URL", "").strip().rstrip("/")
+_QDRANT_QUERY_TIMEOUT_SECONDS = float(os.getenv("QDRANT_QUERY_TIMEOUT_SECONDS", "20"))
 _DEFAULT_KOTE_MODEL = os.getenv(
     "KOTE_MODEL_NAME",
     "searle-j/kote_for_easygoing_people",
 )
 _MAX_LENGTH = 192
 
-_VALID_POS = {"NNG", "NNP", "VV", "VA", "MAG", "XR"}
+_VALID_POS = {"NNG", "VV", "VA", "MAG", "XR"}
+_PROPER_NOUN_POS = {"NNP"}
 
 KOTE_LABELS = [
     "불평/불만", "환영/호의", "감동/감탄", "지긋지긋", "고마움", "슬픔", "화남/분노", "존경", "기대감",
@@ -53,9 +59,27 @@ POSITIVE_LABELS = {
     "환영/호의", "감동/감탄", "고마움", "존경", "기대감", "뿌듯함", "편안/쾌적", "신기함/관심",
     "아껴주는", "즐거움/신남", "깨달음", "흐뭇함(귀여움/예쁨)", "놀람", "행복", "기쁨", "안심/신뢰",
 }
-STOPWORDS = {
-    "중국", "미국", "결국", "과연", "오히려", "어차피", "부리",
-}
+
+
+def _hit_clean_seed(hit: object) -> str:
+    payload = getattr(hit, "payload", None) or {}
+    for key in ("clean_seed", "embed_text", "word_root", "word"):
+        value = payload.get(key)
+        if value:
+            return str(value)
+    return str(id(hit))
+
+
+def _dedupe_hits_by_clean_seed(hits: list) -> list:
+    deduped = []
+    seen: set[str] = set()
+    for hit in hits:
+        key = _hit_clean_seed(hit)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(hit)
+    return deduped
 
 
 @dataclass
@@ -149,7 +173,11 @@ class EmotionGateClassifier:
 class ConditionalSpanRunner:
     def __init__(self) -> None:
         self.kiwi = Kiwi()
-        self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=3.0)
+        self.qdrant = QdrantClient(
+            host=QDRANT_HOST,
+            port=QDRANT_PORT,
+            timeout=_QDRANT_QUERY_TIMEOUT_SECONDS,
+        )
         if _FASTTEXT_SERVER_URL:
             self.ft_model = None
             self._ft_server_url = _FASTTEXT_SERVER_URL
@@ -208,6 +236,11 @@ class ConditionalSpanRunner:
             valid_tokens = []
             for t in tokens:
                 surface = sent.sentence_text[t.start:t.start + t.len]
+                if t.tag in _PROPER_NOUN_POS:
+                    sent_trace.tokens.append(
+                        GateTraceToken(surface, t.form, t.tag, t.start, t.len, False, "proper_noun")
+                    )
+                    continue
                 if t.tag not in _VALID_POS:
                     sent_trace.tokens.append(
                         GateTraceToken(surface, t.form, t.tag, t.start, t.len, False, "invalid_pos")
@@ -218,7 +251,7 @@ class ConditionalSpanRunner:
                         GateTraceToken(surface, t.form, t.tag, t.start, t.len, False, "too_short")
                     )
                     continue
-                if surface in STOPWORDS:
+                if is_blocked_emotion_stopword(surface, t.form):
                     sent_trace.tokens.append(
                         GateTraceToken(surface, t.form, t.tag, t.start, t.len, False, "blocked_stopword")
                     )
@@ -272,6 +305,7 @@ class ConditionalSpanRunner:
                 trace_token.payload_polarities = [pol for _, pol in hit_rows]
 
                 filtered_hits = [h for h, pol in hit_rows if pol in allowed_polarities]
+                filtered_hits = _dedupe_hits_by_clean_seed(filtered_hits)
                 if not filtered_hits:
                     trace_token.reject_reason = "polarity_mismatch"
                     continue
@@ -301,4 +335,3 @@ class ConditionalSpanRunner:
             trace_sentences.append(sent_trace)
 
         return spans, trace_sentences
-

@@ -1,0 +1,212 @@
+{
+  "source_report": "analysis_bc/data/eval/reports/accepted_token_review_report.md",
+  "source_summary": "analysis_bc/data/eval/reports/accepted_token_candidates_from_youtube_transcript_summary.json",
+  "description": "Manual review decisions for ACCEPT tokens. Only block_confirmed items should be copied into the experimental STOPWORDS set or later into production blocked stopword logic.",
+  "review_policy_update": "The user requested that ambiguous REVIEW candidates found after rerunning with the expanded transcript data also be promoted into STOPWORDS. Clear KEEP/emotion words remain out of STOPWORDS.",
+  "block_confirmed": [
+    {
+      "surface": "대해",
+      "reason": "일반 관계 표현. 예: 대만에 대해서, 이에 대해."
+    },
+    {
+      "surface": "함께",
+      "reason": "일반 부사. 예: 함께하겠습니다, 국민과 함께."
+    },
+    {
+      "surface": "반드시",
+      "reason": "강조 부사."
+    },
+    {
+      "surface": "만약",
+      "reason": "조건 담화표지."
+    },
+    {
+      "surface": "현재",
+      "reason": "시간/상태 일반어."
+    },
+    {
+      "surface": "정확히",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "절대",
+      "reason": "강조 부사/일반 명사로 반복 오탐 가능성이 높음."
+    },
+    {
+      "surface": "이미",
+      "reason": "시간/상태 부사."
+    },
+    {
+      "surface": "분명",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "만든",
+      "reason": "일반 동사 활용형."
+    },
+    {
+      "surface": "가지",
+      "reason": "일반 동사 활용형."
+    },
+    {
+      "surface": "그냥",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "최대한",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "철저히",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "전혀",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "자꾸",
+      "reason": "일반 부사."
+    },
+    {
+      "surface": "일본",
+      "reason": "REVIEW에서 차단 승격. 고유명사 주제어."
+    },
+    {
+      "surface": "북한",
+      "reason": "REVIEW에서 차단 승격. 고유명사 주제어."
+    },
+    {
+      "surface": "폭력",
+      "reason": "REVIEW에서 차단 승격. 주제어/정서 근거 양쪽 가능성이 있어 사용자 요청에 따라 차단."
+    },
+    {
+      "surface": "지지",
+      "reason": "REVIEW에서 차단 승격. 정치/사회 주제어 가능성이 큼."
+    },
+    {
+      "surface": "위기",
+      "reason": "REVIEW에서 차단 승격. 부정 상황어이나 감정어보다는 사건/상황 명사."
+    },
+    {
+      "surface": "신뢰",
+      "reason": "REVIEW에서 차단 승격. 평가성이 있으나 일반 개념어로도 사용됨."
+    },
+    {
+      "surface": "제대로",
+      "reason": "REVIEW에서 차단 승격. 일반 부사."
+    },
+    {
+      "surface": "맛있",
+      "reason": "REVIEW에서 차단 승격. 문맥 의존 평가 표현."
+    },
+    {
+      "surface": "떨어지",
+      "reason": "REVIEW에서 차단 승격. 일반 동사."
+    },
+    {
+      "surface": "드립",
+      "reason": "REVIEW에서 차단 승격. 형태소/자막 인식 충돌 가능성."
+    },
+    {
+      "surface": "끝내",
+      "reason": "REVIEW에서 차단 승격. 일반 동사."
+    },
+    {
+      "surface": "대구",
+      "reason": "REVIEW에서 차단 승격. 고유명사 주제어."
+    },
+    {
+      "surface": "조국",
+      "reason": "REVIEW에서 차단 승격. 일반 명사/고유명사 양쪽 가능성."
+    },
+    {
+      "surface": "대통령",
+      "reason": "사용자 추가 확인. 직책/주제어로 감정 표현이 아니며 ACCEPT 오탐 시 차단 대상."
+    },
+    {
+      "surface": "트럼프",
+      "reason": "사용자 추가 확인. 인물 고유명사/뉴스 주제어로 감정 표현이 아니며 ACCEPT 오탐 시 차단 대상."
+    }
+  ],
+  "review_promoted_from_added_data": [
+    "그러",
+    "완전히",
+    "모르",
+    "당연히",
+    "솔직히",
+    "아마",
+    "들어가",
+    "분명히",
+    "바꾸",
+    "가져",
+    "이길",
+    "아예",
+    "아무리",
+    "무조건",
+    "가만히",
+    "이러",
+    "잘못",
+    "원하",
+    "원래",
+    "복잡",
+    "버려",
+    "다니",
+    "걸리",
+    "틀린",
+    "전부",
+    "약점",
+    "떨어져",
+    "돌아가",
+    "대체",
+    "그렇게",
+    "게다가",
+    "거의",
+    "당연",
+    "지키",
+    "적어도",
+    "인해",
+    "유럽",
+    "애매",
+    "서울",
+    "생기",
+    "바뀌",
+    "모른",
+    "들어오",
+    "드려",
+    "대한민국",
+    "넘어가",
+    "나와"
+  ],
+  "keep_confirmed": [
+    {
+      "surface": "좌절",
+      "reason": "감정 상태."
+    },
+    {
+      "surface": "자포자기",
+      "reason": "감정 상태."
+    },
+    {
+      "surface": "걱정",
+      "reason": "감정 상태."
+    },
+    {
+      "surface": "불안",
+      "reason": "감정 상태."
+    },
+    {
+      "surface": "패배",
+      "reason": "강한 부정 정서 표현으로 유지."
+    },
+    {
+      "surface": "파괴",
+      "reason": "강한 부정 정서 표현으로 유지."
+    },
+    {
+      "surface": "충격",
+      "reason": "감정/정서적 반응 표현."
+    }
+  ],
+  "review_pending": []
+}
