@@ -97,6 +97,13 @@ class BiasAnalysisKeywordDto(BaseModel):
     score: float
 
 
+class FocusKeywordDto(BaseModel):
+    keyword_text: str
+    score: float
+    occurrence_count: int
+    sentence_count: int
+
+
 class BiasEvidenceDto(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
@@ -135,6 +142,7 @@ class BiasAnalysisResultDto(BaseModel):
     bias_type_scores: dict[str, float] = Field(default_factory=dict)
     keywords: list[BiasAnalysisKeywordDto]
     emotion_keywords: list[BiasAnalysisKeywordDto] = Field(default_factory=list)
+    focus_keywords: list[FocusKeywordDto] = Field(default_factory=list)
     sentence_labels: list[SpanLabelDto]
     evidences: list[BiasEvidenceDto]
 

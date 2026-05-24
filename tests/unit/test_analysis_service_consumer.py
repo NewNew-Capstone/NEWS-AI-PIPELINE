@@ -54,6 +54,7 @@ def test_analyze_content_stub_returns_empty_lists() -> None:
 
     assert result.sentence_labels == []
     assert result.keywords == []
+    assert result.focus_keywords == []
     assert result.evidences == []
 
 

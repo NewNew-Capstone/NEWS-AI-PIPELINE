@@ -4,6 +4,7 @@ from analysis_bc.schemas import (
     BiasAnalysisKeywordDto,
     BiasAnalysisResultDto,
     BiasEvidenceDto,
+    FocusKeywordDto,
     SentenceBiasLabelDto,
     SentenceInputDto,
     SpanLabelDto,
@@ -87,6 +88,22 @@ def test_bias_evidence_dto_valid() -> None:
     assert ev.confidence_score == 0.9
 
 
+def test_focus_keyword_dto_valid() -> None:
+    kw = FocusKeywordDto(
+        keyword_text="트럼프",
+        score=0.75,
+        occurrence_count=6,
+        sentence_count=4,
+    )
+
+    assert kw.model_dump() == {
+        "keyword_text": "트럼프",
+        "score": 0.75,
+        "occurrence_count": 6,
+        "sentence_count": 4,
+    }
+
+
 def test_bias_analysis_result_dto_full() -> None:
     result = BiasAnalysisResultDto(
         target_id=42,
@@ -101,6 +118,9 @@ def test_bias_analysis_result_dto_full() -> None:
         tone_label="중립",
         keywords=[
             BiasAnalysisKeywordDto(keyword_text="kw", keyword_type=BiasKeywordType.FRAME, score=0.5)
+        ],
+        focus_keywords=[
+            FocusKeywordDto(keyword_text="트럼프", score=0.75, occurrence_count=6, sentence_count=4)
         ],
         sentence_labels=[
             SpanLabelDto(
@@ -127,5 +147,6 @@ def test_bias_analysis_result_dto_full() -> None:
     assert result.headline_body_gap_score is None
     assert result.score_reason_summary == "점수 근거 요약"
     assert len(result.keywords) == 1
+    assert len(result.focus_keywords) == 1
     assert len(result.sentence_labels) == 1
     assert len(result.evidences) == 1
