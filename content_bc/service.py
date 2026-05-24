@@ -2,7 +2,8 @@
 import logging
 
 from content_bc.modules.transcript_loader import load_transcript
-from content_bc.schemas import TranscriptResponseDto
+from content_bc.modules.video_ranker import rank_by_cosine
+from content_bc.schemas import TranscriptResponseDto, VideoRankRequest, VideoRankResponse
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +40,11 @@ class ContentService:
                 transcript="",
                 transcript_status="failed",
             )
+
+    def rank_videos(self, request: VideoRankRequest) -> VideoRankResponse:
+        ranked_ids = rank_by_cosine(
+            keyword=request.keyword,
+            videos=[v.model_dump() for v in request.videos],
+            top_n=request.top_n,
+        )
+        return VideoRankResponse(ranked_video_ids=ranked_ids)
