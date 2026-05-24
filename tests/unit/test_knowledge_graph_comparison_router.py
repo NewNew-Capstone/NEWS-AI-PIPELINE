@@ -31,15 +31,15 @@ def test_comparison_home_endpoint_returns_service_response() -> None:
 
 
 def test_search_videos_endpoint_returns_service_response() -> None:
-    response = SearchVideosResponse(applied_cluster_type="CURATION_MANUAL", keyword="반도체", sections=[])
+    response = SearchVideosResponse(applied_cluster_type="ALL_AVAILABLE", keyword="반도체", sections=[])
     service = MagicMock()
     service.search_videos.return_value = response
 
     with patch("knowledge_graph_bc.router.KnowledgeGraphComparisonService", return_value=service):
-        result = router_mod.search_videos(keyword="반도체", limit=5)
+        result = router_mod.search_videos(keyword="반도체", limit=5, scope="all")
 
     assert result == response
-    service.search_videos.assert_called_once_with(keyword="반도체", limit=5)
+    service.search_videos.assert_called_once_with(keyword="반도체", limit=5, scope="all")
 
 
 def test_comparison_graph_endpoint_returns_service_response() -> None:
@@ -56,12 +56,13 @@ def test_comparison_graph_endpoint_returns_service_response() -> None:
     service.get_comparison_graph.return_value = response
 
     with patch("knowledge_graph_bc.router.KnowledgeGraphComparisonService", return_value=service):
-        result = router_mod.comparison_graph(video_id="kr001", limit_per_country=5)
+        result = router_mod.comparison_graph(video_id="kr001", limit_per_country=5, scope="all")
 
     assert result == response
     service.get_comparison_graph.assert_called_once_with(
         video_id="kr001",
         limit_per_country=5,
+        scope="all",
     )
 
 
