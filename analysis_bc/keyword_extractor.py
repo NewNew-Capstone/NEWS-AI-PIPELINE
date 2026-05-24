@@ -15,6 +15,33 @@ _TOP_N = 5
 
 _FRAME_POS: frozenset[str] = frozenset({"NNG", "NNP", "VV", "VA"})
 _TOPIC_POS: frozenset[str] = frozenset({"NNG", "NNP"})
+_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "관련",
+        "뉴스",
+        "영상",
+        "오늘",
+        "이번",
+        "대한",
+        "있는",
+        "없는",
+        "것",
+        "수",
+        "때",
+        "중",
+        "등",
+        "및",
+        "그리고",
+        "하지만",
+        "그러나",
+        "지난",
+        "최근",
+        "현재",
+        "기자",
+        "앵커",
+        "보도",
+    }
+)
 
 
 class KeywordExtractor:
@@ -65,6 +92,8 @@ class KeywordExtractor:
                     continue
                 if len(token.form) < 2:
                     continue
+                if self._is_stopword(token.form):
+                    continue
                 weights[token.form] = weights.get(token.form, 0.0) + sentence_weight
         return self._to_relative_keywords(weights, keyword_type)
 
@@ -92,4 +121,8 @@ class KeywordExtractor:
         if not keywords:
             return []
         sorted_list = sorted(keywords, key=lambda k: k.score, reverse=True)
-        return sorted_list[:_TOP_N]
+        return [keyword for keyword in sorted_list if not self._is_stopword(keyword.keyword_text)][:_TOP_N]
+
+    def _is_stopword(self, keyword: str) -> bool:
+        normalized = keyword.strip().lower()
+        return normalized in _STOPWORDS

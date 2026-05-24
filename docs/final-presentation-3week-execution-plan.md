@@ -72,6 +72,41 @@
 - [ ] 스키마 필수값 누락률 0% 달성(`country_code/language/status`).
 - [ ] 기능2에서 최소 1개 이상 비교쌍 생성 확인.
 
+#### 트럼프-대만 데모 세트 실행 명령
+
+수동 큐레이션 원천 파일:
+
+- `demo_data/trump_taiwan_2026_demo.csv`
+- 가이드: `demo_data/trump_taiwan_2026_demo.README.md`
+
+검증:
+
+```bash
+.venv/bin/python scripts/validate_demo_curation.py \
+  --csv demo_data/trump_taiwan_2026_demo.csv \
+  --output-json logs/demo_curation/trump_taiwan_validation.json \
+  --output-md logs/demo_curation/trump_taiwan_validation.md
+```
+
+Spring 큐레이션 세트 적재:
+
+```bash
+.venv/bin/python scripts/apply_demo_curation.py \
+  --csv demo_data/trump_taiwan_2026_demo.csv \
+  --backend-url http://127.0.0.1:8080 \
+  --trigger-analysis \
+  --lock
+```
+
+데모 API 검증:
+
+```bash
+.venv/bin/python scripts/verify_demo_curation.py \
+  --backend-url http://127.0.0.1:8080 \
+  --issue-cluster-id PUT_CLUSTER_ID_HERE \
+  --source-video-id PUT_YOUTUBE_VIDEO_ID_HERE
+```
+
 ### 2주차 — 화면·지표 완성
 - [ ] 비교 리포트 화면 1개 완성(5개 지표 고정).
 - [ ] 기능1 설명가능성 화면 완성.
