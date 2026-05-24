@@ -108,6 +108,25 @@ class TestKeywordExtractorFilter:
         result = kw_extractor.extract(sentences=[], classified=[], span_labels=[span])
         assert result == []
 
+    def test_stopword_filter(self, extractor):
+        kw_extractor, mock_kiwi = extractor
+        news = MagicMock()
+        news.form = "뉴스"
+        news.tag = "NNG"
+        taiwan = MagicMock()
+        taiwan.form = "대만"
+        taiwan.tag = "NNP"
+        related = MagicMock()
+        related.form = "관련"
+        related.tag = "NNG"
+        mock_kiwi.tokenize.return_value = [news, taiwan, related]
+        classified = [_sentence(1, "뉴스 대만 관련", label="fact_like", conf=0.8)]
+
+        result = kw_extractor.extract(sentences=[], classified=classified, span_labels=[])
+
+        topic_kws = [k.keyword_text for k in result if k.keyword_type == BiasKeywordType.TOPIC]
+        assert topic_kws == ["대만"]
+
     def test_dedup_sums_duplicate_weights(self, extractor):
         kw_extractor, mock_kiwi = extractor
         mock_kiwi.tokenize.return_value = []

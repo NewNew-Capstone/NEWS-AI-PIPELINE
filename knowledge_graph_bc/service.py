@@ -35,12 +35,32 @@ STOPWORDS = {
     "from",
     "영상",
     "뉴스",
+    "news",
     "관련",
     "오늘",
     "이번",
     "대한",
     "있는",
     "없는",
+    "보도",
+    "기자",
+    "앵커",
+    "단독",
+    "속보",
+    "최근",
+    "현재",
+    "지난",
+    "그리고",
+    "하지만",
+    "그러나",
+    "breaking",
+    "latest",
+    "update",
+    "updates",
+    "report",
+    "reports",
+    "said",
+    "says",
 }
 
 logger = logging.getLogger(__name__)
@@ -242,6 +262,7 @@ class KnowledgeGraphComparisonService:
         return self.client.execute_read(
             """
             MATCH (v:Video)
+            WITH v, coalesce(v.published_at, "") AS sort_key
             OPTIONAL MATCH (v)-[:PART_OF]->(i:Issue)
             OPTIONAL MATCH (v)-[]-(legacy_i:Issue)
             OPTIONAL MATCH (v)-[]-(ic:IssueCluster)
@@ -250,24 +271,25 @@ class KnowledgeGraphComparisonService:
             RETURN properties(v) AS video,
                    [x IN (
                      collect(DISTINCT CASE
-                       WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                       THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                       WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, ""))) = $cluster_type
+                       THEN i{.*, cluster_type: toUpper(toString(i.cluster_type))}
                      END) +
                      collect(DISTINCT CASE
-                       WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                       THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                       WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, ""))) = $cluster_type
+                       THEN legacy_i{.*, cluster_type: toUpper(toString(legacy_i.cluster_type))}
                      END) +
                      collect(DISTINCT CASE
-                       WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                       THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                       WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ""))) = $cluster_type
+                       THEN ic{.*, cluster_type: toUpper(toString(ic.cluster_type))}
                      END) +
                      collect(DISTINCT CASE
-                       WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                       THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                       WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, ""))) = $cluster_type
+                       THEN inode{.*, cluster_type: toUpper(toString(inode.cluster_type))}
                      END)
                    ) WHERE x IS NOT NULL] AS issue_props,
-                   collect(DISTINCT properties(a)) AS analysis_props
-            ORDER BY coalesce(v.published_at, v.publishedAt, v.created_at, v.createdAt, "") DESC
+                   collect(DISTINCT properties(a)) AS analysis_props,
+                   sort_key
+            ORDER BY sort_key DESC
             LIMIT $limit
             """,
             {"limit": limit, "cluster_type": CLUSTER_TYPE_CURATION_MANUAL},
@@ -288,28 +310,29 @@ class KnowledgeGraphComparisonService:
             WITH v,
                  [x IN (
                    collect(DISTINCT CASE
-                     WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                     THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                     WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, ""))) = $cluster_type
+                     THEN i{.*, cluster_type: toUpper(toString(i.cluster_type))}
                    END) +
                    collect(DISTINCT CASE
-                     WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                     THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                     WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, ""))) = $cluster_type
+                     THEN legacy_i{.*, cluster_type: toUpper(toString(legacy_i.cluster_type))}
                    END) +
                    collect(DISTINCT CASE
-                     WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                     THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                     WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ""))) = $cluster_type
+                     THEN ic{.*, cluster_type: toUpper(toString(ic.cluster_type))}
                    END) +
                    collect(DISTINCT CASE
-                     WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                     THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                     WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, ""))) = $cluster_type
+                     THEN inode{.*, cluster_type: toUpper(toString(inode.cluster_type))}
                    END)
                  ) WHERE x IS NOT NULL] AS issue_props,
                  collect(DISTINCT properties(c)) +
                  collect(DISTINCT properties(legacy_c)) AS channel_props,
                  collect(DISTINCT properties(a)) AS analysis_props,
                  collect(DISTINCT properties(e)) AS entity_props
-            WHERE toUpper(toString(coalesce(v.country_code, v.country, v.countryCode, v.region, ""))) = $country
-              AND toLower(toString(coalesce(v.language, v.lang, v.language_code, v.languageCode, ""))) = $language
+            WHERE toUpper(toString(coalesce(v.country_code, ""))) = $country
+              AND toLower(toString(coalesce(v.language, ""))) = $language
+              AND size(issue_props) > 0
             RETURN properties(v) AS video,
                    issue_props,
                    CASE WHEN size(channel_props) > 0 THEN channel_props[0] ELSE {} END AS channel,
@@ -317,8 +340,8 @@ class KnowledgeGraphComparisonService:
                    entity_props
             ORDER BY
               CASE WHEN toUpper(toString(coalesce(CASE WHEN size(analysis_props) > 0 THEN analysis_props[0].status ELSE "SUCCESS" END, "SUCCESS"))) = "SUCCESS" THEN 1 ELSE 0 END DESC,
-              coalesce(v.published_at, v.publishedAt, v.created_at, v.createdAt, "") DESC,
-              coalesce(v.view_count, v.viewCount, 0) DESC
+              coalesce(v.published_at, "") DESC,
+              coalesce(v.view_count, 0) DESC
             LIMIT $limit
             """,
             {
@@ -333,7 +356,7 @@ class KnowledgeGraphComparisonService:
         rows = self.client.execute_read(
             """
             MATCH (v:Video)
-            WHERE toString(coalesce(v.video_id, v.id, "")) = $video_id
+            WHERE toString(coalesce(v.video_id, "")) = $video_id
             OPTIONAL MATCH (v)-[:PART_OF]->(i:Issue)
             OPTIONAL MATCH (v)-[]-(legacy_i:Issue)
             OPTIONAL MATCH (v)-[]-(ic:IssueCluster)
@@ -345,20 +368,20 @@ class KnowledgeGraphComparisonService:
             RETURN properties(v) AS video,
                    [x IN (
                      collect(DISTINCT CASE
-                       WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                       THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                       WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, ""))) = $cluster_type
+                       THEN i{.*, cluster_type: toUpper(toString(i.cluster_type))}
                      END) +
                      collect(DISTINCT CASE
-                       WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                       THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                       WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, ""))) = $cluster_type
+                       THEN legacy_i{.*, cluster_type: toUpper(toString(legacy_i.cluster_type))}
                      END) +
                      collect(DISTINCT CASE
-                       WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                       THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                       WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ""))) = $cluster_type
+                       THEN ic{.*, cluster_type: toUpper(toString(ic.cluster_type))}
                      END) +
                      collect(DISTINCT CASE
-                       WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                       THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                       WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, ""))) = $cluster_type
+                       THEN inode{.*, cluster_type: toUpper(toString(inode.cluster_type))}
                      END)
                    ) WHERE x IS NOT NULL] AS issue_props,
                    CASE
@@ -385,11 +408,11 @@ class KnowledgeGraphComparisonService:
         return self.client.execute_read(
             """
             MATCH (source:Video)-[:PART_OF]->(i:Issue)<-[:PART_OF]-(related:Video)
-            WHERE toString(coalesce(source.video_id, source.id, "")) = $source_video_id
-              AND toString(coalesce(related.video_id, related.id, "")) <> $source_video_id
-              AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-              AND toUpper(toString(coalesce(related.country_code, related.country, related.countryCode, related.region, ""))) = $country
-              AND toLower(toString(coalesce(related.language, related.lang, related.language_code, related.languageCode, ""))) = $language
+            WHERE toString(coalesce(source.video_id, "")) = $source_video_id
+              AND toString(coalesce(related.video_id, "")) <> $source_video_id
+              AND toUpper(toString(coalesce(i.cluster_type, ""))) = $cluster_type
+              AND toUpper(toString(coalesce(related.country_code, ""))) = $country
+              AND toLower(toString(coalesce(related.language, ""))) = $language
             OPTIONAL MATCH (related)-[]-(legacy_i:Issue)
             OPTIONAL MATCH (related)-[]-(ic:IssueCluster)
             OPTIONAL MATCH (related)-[]-(inode:IssueNode)
@@ -400,20 +423,20 @@ class KnowledgeGraphComparisonService:
             WITH related,
                  [x IN (
                    collect(DISTINCT CASE
-                     WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, i.clusterType, ""))) = $cluster_type
-                     THEN i{.*, cluster_type: toUpper(toString(coalesce(i.cluster_type, i.clusterType)))}
+                     WHEN i IS NOT NULL AND toUpper(toString(coalesce(i.cluster_type, ""))) = $cluster_type
+                     THEN i{.*, cluster_type: toUpper(toString(i.cluster_type))}
                    END) +
                    collect(DISTINCT CASE
-                     WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType, ""))) = $cluster_type
-                     THEN legacy_i{.*, cluster_type: toUpper(toString(coalesce(legacy_i.cluster_type, legacy_i.clusterType)))}
+                     WHEN legacy_i IS NOT NULL AND toUpper(toString(coalesce(legacy_i.cluster_type, ""))) = $cluster_type
+                     THEN legacy_i{.*, cluster_type: toUpper(toString(legacy_i.cluster_type))}
                    END) +
                    collect(DISTINCT CASE
-                     WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ic.clusterType, ""))) = $cluster_type
-                     THEN ic{.*, cluster_type: toUpper(toString(coalesce(ic.cluster_type, ic.clusterType)))}
+                     WHEN ic IS NOT NULL AND toUpper(toString(coalesce(ic.cluster_type, ""))) = $cluster_type
+                     THEN ic{.*, cluster_type: toUpper(toString(ic.cluster_type))}
                    END) +
                    collect(DISTINCT CASE
-                     WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, inode.clusterType, ""))) = $cluster_type
-                     THEN inode{.*, cluster_type: toUpper(toString(coalesce(inode.cluster_type, inode.clusterType)))}
+                     WHEN inode IS NOT NULL AND toUpper(toString(coalesce(inode.cluster_type, ""))) = $cluster_type
+                     THEN inode{.*, cluster_type: toUpper(toString(inode.cluster_type))}
                    END)
                  ) WHERE x IS NOT NULL] AS issue_props,
                  collect(DISTINCT properties(c)) +
@@ -427,8 +450,8 @@ class KnowledgeGraphComparisonService:
                    entity_props
             ORDER BY
               CASE WHEN toUpper(toString(coalesce(CASE WHEN size(analysis_props) > 0 THEN analysis_props[0].status ELSE "SUCCESS" END, "SUCCESS"))) = "SUCCESS" THEN 1 ELSE 0 END DESC,
-              coalesce(related.view_count, related.viewCount, 0) DESC,
-              coalesce(related.published_at, related.publishedAt, related.created_at, related.createdAt, "") DESC
+              coalesce(related.view_count, 0) DESC,
+              coalesce(related.published_at, "") DESC
             LIMIT $limit
             """,
             {
@@ -473,6 +496,7 @@ class KnowledgeGraphComparisonService:
             return [(row, self._base_video_score(row)) for row in rows]
 
         needle = keyword.lower()
+        tokens = [token for token in needle.replace("-", " ").replace("/", " ").split() if token]
         ranked: list[tuple[dict[str, Any], float]] = []
         for row in rows:
             haystack_parts = [
@@ -481,10 +505,13 @@ class KnowledgeGraphComparisonService:
                 " ".join(self._extract_keywords(row, max_count=50)),
             ]
             haystack = " ".join(haystack_parts).lower()
-            if needle not in haystack:
+            exact_match = needle in haystack
+            token_match = bool(tokens) and all(token in haystack for token in tokens)
+            if not exact_match and not token_match:
                 continue
             score = self._base_video_score(row)
             score += haystack.count(needle) * 2.0
+            score += sum(haystack.count(token) for token in tokens)
             ranked.append((row, score))
         return sorted(ranked, key=lambda item: item[1], reverse=True)
 
