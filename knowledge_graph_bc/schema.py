@@ -36,4 +36,9 @@ SCHEMA_CONSTRAINTS: tuple[str, ...] = (
     FOR (a:AnalysisResult)
     REQUIRE a.analysis_id IS UNIQUE
     """,
+    """
+    CREATE CONSTRAINT realtime_ingest_job_request_id_unique IF NOT EXISTS
+    FOR (j:RealtimeIngestJob)
+    REQUIRE j.request_id IS UNIQUE
+    """,
 )
