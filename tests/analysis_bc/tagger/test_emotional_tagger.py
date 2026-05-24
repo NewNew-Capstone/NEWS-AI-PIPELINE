@@ -50,6 +50,12 @@ def _make_token(form: str, start: int, length: int) -> MagicMock:
     return token
 
 
+def _make_query_result(hits: list[MagicMock]) -> MagicMock:
+    result = MagicMock()
+    result.points = hits
+    return result
+
+
 def test_tag_returns_emotionally_loaded_span(mock_tagger: EmotionalTagger) -> None:
     """끔찍한 위치에 EMOTIONALLY_LOADED 태깅 및 offset 검증."""
     text = "끔찍한 사건이 발생했다"
@@ -67,7 +73,7 @@ def test_tag_returns_emotionally_loaded_span(mock_tagger: EmotionalTagger) -> No
     hit = MagicMock()
     hit.score = 0.92
     hit.payload = {"word_root": "끔찍", "word": "끔찍한", "polarity": "-2"}
-    mock_tagger.qdrant.search.return_value = [hit]
+    mock_tagger.qdrant.query_points.return_value = _make_query_result([hit])
 
     result = mock_tagger.tag([sentence])
 
@@ -90,7 +96,7 @@ def test_tag_no_match_returns_empty(mock_tagger: EmotionalTagger) -> None:
 
     import numpy as np
     mock_tagger.model.encode.return_value = np.zeros(768)
-    mock_tagger.qdrant.search.return_value = []
+    mock_tagger.qdrant.query_points.return_value = _make_query_result([])
 
     result = mock_tagger.tag([sentence])
 
@@ -120,7 +126,11 @@ def test_tag_multiple_tokens_one_match(mock_tagger: EmotionalTagger) -> None:
     hit.score = 0.91
     hit.payload = {"word_root": "끔찍"}
     # 첫 토큰만 매칭, 나머지는 빈 결과
-    mock_tagger.qdrant.search.side_effect = [[hit], [], []]
+    mock_tagger.qdrant.query_points.side_effect = [
+        _make_query_result([hit]),
+        _make_query_result([]),
+        _make_query_result([]),
+    ]
 
     result = mock_tagger.tag([sentence])
 

@@ -8,7 +8,9 @@
       "Bash(.venv/bin/ruff check:*)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(.venv/bin/mypy issue_comparison_bc/)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
+      "WebSearch"
     ]
   }
 }

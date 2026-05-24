@@ -123,8 +123,12 @@ class AnalysisService:
             classified=classified,
             span_labels=sentence_labels,
         )
+        focus_keywords = self.keyword_extractor.extract_focus_keywords(classified)
         emotion_keywords = [k for k in keywords if k.keyword_type == "EMOTION"]
-        print(f"[서비스] KeywordExtractor 완료 — 키워드 수: {len(keywords)}, emotion: {len(emotion_keywords)}")
+        print(
+            f"[서비스] KeywordExtractor 완료 — 키워드 수: {len(keywords)}, "
+            f"emotion: {len(emotion_keywords)}, focus: {len(focus_keywords)}"
+        )
 
         print("[서비스] EvidenceExtractor 시작")
         evidences = self.evidence_extractor.extract(
@@ -149,6 +153,7 @@ class AnalysisService:
             f"  - headline_body_gap   : {gap_result.gap_score:.4f} (std: {gap_result.gap_std:.4f})\n"
             f"  - fact_ratio          : {scores['fact_ratio']:.4f}\n"
             f"  - keywords            : {len(keywords)}개\n"
+            f"  - focus_keywords      : {len(focus_keywords)}개\n"
             f"  - sentence_labels     : {len(sentence_labels)}개\n"
             f"  - evidences           : {len(evidences)}개\n"
             f"  - summary_text        : {summary.get('summary_text', '')[:50]}...\n"
@@ -174,6 +179,7 @@ class AnalysisService:
             score_reason_summary=score_reason_summary,
             keywords=keywords,
             emotion_keywords=emotion_keywords,
+            focus_keywords=focus_keywords,
             sentence_labels=sentence_labels,
             evidences=evidences,
         )

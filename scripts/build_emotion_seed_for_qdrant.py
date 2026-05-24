@@ -14,9 +14,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 KNU_PATH = Path("analysis_bc/data/SentiWord_info.json")
 KOTE_RAW_DIR = Path("analysis_bc/data/eval/raw/kote")
 DEFAULT_OUTPUT = Path("analysis_bc/data/eval/processed/kote/emotion_seed_for_qdrant.jsonl")
+DEFAULT_REJECTED_OUTPUT = Path("analysis_bc/data/eval/processed/kote/emotion_seed_rejected_for_review.jsonl")
 
-_VALID_POS = {"NNG", "NNP", "VV", "VA", "MAG", "XR"}
+_VALID_POS = {"NNG", "VV", "VA", "XR"}
 _KOREAN_RE = re.compile(r"[가-힣]")
+_KIWI: Kiwi | None = None
 
 # KOTE 44 labels (dataset card 순서)
 _KOTE_LABELS = [
@@ -55,46 +57,232 @@ _EMOTION_NNG_WHITELIST = {
     "연민", "죄책감", "당황", "부끄러움", "귀찮음", "지침", "피로", "우려",
 }
 
+_KNU_KEEP_POS_PREFIXES = ("VA", "VV", "XR")
+_KNU_DESCRIPTOR_NOUNS = {
+    "모양", "데", "정도", "사람", "것", "수", "상태", "경우", "느낌", "적",
+}
+_KNU_GENERIC_NOUNS = {
+    "가격", "가능", "가능성",
+}
+_KNU_GENERIC_PREDICATES = {
+    "가누", "있", "없", "못하", "하", "되",
+    # KNU 설명구에서 보조/일반 서술어만 뼈대로 남으면 Qdrant exact hit
+    # seed가 되어 ACCEPT 오탐을 크게 늘린다.
+    "만들", "보이", "일어나", "움직이", "이루어지", "이기", "바라",
+    "나오", "끝나", "오래", "충분", "벌어지", "취하", "위하", "세우",
+    "빛나", "놓치", "나아가", "나가", "지나가", "내놓", "흘러가",
+    "앞서", "살펴보", "보내", "만나", "따르", "드러나", "대하",
+    "넘기", "갖추", "가져가", "지내", "올리", "이끌",
+    "깨", "시키",
+}
+_KNU_EVALUATIVE_NNG_WHITELIST = _EMOTION_NNG_WHITELIST | {
+    "가난", "거북",
+}
+_KNU_ADJECTIVE_NOUNS = {
+    "가난", "거북",
+}
+_LEXICALIZED_NOUN_VERB_SEEDS = {
+    ("짜증", "나"): "짜증나다",
+    ("화", "나"): "화나다",
+}
+
+
+def _get_kiwi() -> Kiwi:
+    global _KIWI
+    if _KIWI is None:
+        _KIWI = Kiwi()
+    return _KIWI
+
+
+def _normalize_polarity(value: object) -> int | None:
+    try:
+        polarity = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return polarity if polarity != 0 else None
+
+
+def _is_keep_pos(tag: str) -> bool:
+    return tag == "XR" or tag.startswith(_KNU_KEEP_POS_PREFIXES)
+
+
+def _is_generic_form(form: str) -> bool:
+    base = form[:-1] if form.endswith("다") else form
+    return (
+        base in _BLACKLIST
+        or base in _KNU_DESCRIPTOR_NOUNS
+        or base in _KNU_GENERIC_NOUNS
+        or base in _KNU_GENERIC_PREDICATES
+    )
+
+
+def _is_allowed_knu_nng(form: str) -> bool:
+    if form in _KNU_DESCRIPTOR_NOUNS or form in _KNU_GENERIC_NOUNS:
+        return False
+    return form in _KNU_EVALUATIVE_NNG_WHITELIST
+
+
+def _predicate_seed(form: str) -> str:
+    return form if form.endswith("다") else f"{form}다"
+
+
+def _root_seed(form: str) -> str:
+    return form if form.endswith("하다") else f"{form}하다"
+
+
+def _category_for_clean_seed(clean_seed: str, polarity: int) -> str:
+    if clean_seed in _EMOTION_NNG_WHITELIST:
+        return "DIRECT_EMOTION"
+    if polarity < 0:
+        return "NEGATIVE_STATE"
+    return "EVALUATIVE_WORD"
+
+
+def _reject_row(row: dict, reason: str, polarity: int | None = None) -> dict:
+    return {
+        "original_word": str(row.get("word", "")).strip(),
+        "original_word_root": str(row.get("word_root", "")).strip(),
+        "clean_seed": None,
+        "polarity": polarity,
+        "is_valid_emotion": False,
+        "reject_reason": reason,
+        "source": "knu",
+    }
+
+
+def _content_tokens(text: str) -> list[tuple[str, str]]:
+    tokens: list[tuple[str, str]] = []
+    for token in _get_kiwi().tokenize(text):
+        form = token.form.strip()
+        if not form or not _is_korean(form):
+            continue
+        if token.tag.startswith("J") or token.tag.startswith("E") or token.tag.startswith("XS"):
+            continue
+        if form in _KNU_DESCRIPTOR_NOUNS:
+            continue
+        tokens.append((form, token.tag))
+    return tokens
+
+
+def _clean_seed_from_text(text: str) -> tuple[str | None, str | None]:
+    content_tokens = _content_tokens(text)
+    for idx, (form, tag) in enumerate(content_tokens[:-1]):
+        next_form, next_tag = content_tokens[idx + 1]
+        seed = _LEXICALIZED_NOUN_VERB_SEEDS.get((form, next_form))
+        if seed and tag == "NNG" and next_tag.startswith("VV"):
+            return seed, None
+
+    direct_nouns: list[str] = []
+    predicates: list[str] = []
+    roots: list[str] = []
+    adjective_nouns: list[str] = []
+
+    for form, tag in content_tokens:
+        if _is_generic_form(form):
+            continue
+        if tag == "NNG":
+            if form in _EMOTION_NNG_WHITELIST:
+                direct_nouns.append(form)
+            elif form in _KNU_ADJECTIVE_NOUNS:
+                adjective_nouns.append(_root_seed(form))
+            continue
+        if tag.startswith(("VA", "VV")):
+            predicates.append(_predicate_seed(form))
+            continue
+        if tag == "XR":
+            roots.append(_root_seed(form))
+
+    if direct_nouns:
+        return direct_nouns[0], None
+    if predicates:
+        return predicates[0], None
+    if roots:
+        return roots[0], None
+    if adjective_nouns:
+        return adjective_nouns[0], None
+    return None, "no_emotion_candidate"
+
+
+def clean_knu_entry(row: dict) -> dict:
+    word = str(row.get("word", "")).strip()
+    root = str(row.get("word_root", "")).strip()
+    polarity = _normalize_polarity(row.get("polarity"))
+    if polarity is None:
+        return _reject_row(row, "invalid_polarity")
+
+    source_text = root or word
+    if not source_text:
+        return _reject_row(row, "empty_text", polarity)
+    if not _is_korean(source_text):
+        return _reject_row(row, "non_korean", polarity)
+
+    clean_seed, reject_reason = _clean_seed_from_text(source_text)
+    if clean_seed is None:
+        return _reject_row(row, reject_reason or "no_emotion_candidate", polarity)
+
+    return {
+        "original_word": word,
+        "original_word_root": root,
+        "clean_seed": clean_seed,
+        "polarity": polarity,
+        "is_valid_emotion": True,
+        "reject_reason": None,
+        "source": "knu",
+        "category": _category_for_clean_seed(clean_seed, polarity),
+    }
+
+
+def _seed_row_from_clean(cleaned: dict, source: str, **extra: object) -> dict:
+    clean_seed = str(cleaned["clean_seed"])
+    return {
+        "embed_text": clean_seed,
+        "word": clean_seed,
+        "word_root": clean_seed,
+        "clean_seed": clean_seed,
+        "polarity": str(cleaned["polarity"]),
+        "source": source,
+        "category": cleaned.get("category"),
+        "confidence_tier": "HIGH",
+        "original_word": cleaned.get("original_word"),
+        "original_word_root": cleaned.get("original_word_root"),
+        **extra,
+    }
+
+
+def skeletonize_knu_entry(row: dict) -> dict | None:
+    cleaned = clean_knu_entry(row)
+    if not cleaned["is_valid_emotion"]:
+        return None
+    return _seed_row_from_clean(cleaned, "knu", score_hint=1.0)
+
 
 def _is_korean(text: str) -> bool:
     return bool(text and _KOREAN_RE.search(text))
 
 
-def _read_knu_entries() -> list[dict]:
+def _read_knu_entries_with_rejected() -> tuple[list[dict], list[dict]]:
     with KNU_PATH.open(encoding="utf-8") as f:
         rows = json.load(f)
 
     out: list[dict] = []
-    seen: set[tuple[str, str, str]] = set()
+    rejected: list[dict] = []
+    seen: set[tuple[str, str]] = set()
     for row in rows:
-        word = str(row.get("word", "")).strip()
-        root = str(row.get("word_root", "")).strip()
-        polarity = str(row.get("polarity", "0")).strip()
-        if not word or not root:
+        cleaned = clean_knu_entry(row)
+        if not cleaned["is_valid_emotion"]:
+            rejected.append(cleaned)
             continue
-        try:
-            pol_int = int(polarity)
-        except ValueError:
-            continue
-        if pol_int > -1:
-            continue
-        if root in _BLACKLIST:
-            continue
-        if not _is_korean(word) and not _is_korean(root):
-            continue
-        key = (word, root, polarity)
+        seed_row = _seed_row_from_clean(cleaned, "knu", score_hint=1.0)
+        key = (seed_row["embed_text"], seed_row["polarity"])
         if key in seen:
             continue
         seen.add(key)
-        out.append({
-            "embed_text": word,
-            "word": word,
-            "word_root": root,
-            "polarity": str(pol_int),
-            "source": "knu",
-            "score_hint": 1.0,
-        })
-    return out
+        out.append(seed_row)
+    return out, rejected
+
+
+def _read_knu_entries() -> list[dict]:
+    return _read_knu_entries_with_rejected()[0]
 
 
 def _row_polarity(label_ids: list[int]) -> str | None:
@@ -114,12 +302,22 @@ def _row_polarity(label_ids: list[int]) -> str | None:
     return "-1" if neg > pos else "1"
 
 
-def _is_allowed_kote_token(surface: str, pos: str) -> bool:
+def _clean_kote_token(surface: str, form: str, pos: str) -> str | None:
     if surface in _BLACKLIST or surface in _KOTE_STOPWORDS:
-        return False
+        return None
+    if _is_generic_form(form) or _is_generic_form(surface):
+        return None
     if pos == "NNG":
-        return surface in _EMOTION_NNG_WHITELIST
-    return True
+        if form in _EMOTION_NNG_WHITELIST:
+            return form
+        if form in _KNU_ADJECTIVE_NOUNS:
+            return _root_seed(form)
+        return None
+    if pos.startswith(("VA", "VV")):
+        return _predicate_seed(form)
+    if pos == "XR":
+        return _root_seed(form)
+    return None
 
 
 def _extract_kote_entries(min_freq: int, min_polarity_ratio: float) -> list[dict]:
@@ -151,11 +349,12 @@ def _extract_kote_entries(min_freq: int, min_polarity_ratio: float) -> list[dict
                         continue
                     if not _is_korean(surface):
                         continue
-                    if not _is_allowed_kote_token(surface, token.tag):
+                    clean_seed = _clean_kote_token(surface, token.form.strip(), token.tag)
+                    if clean_seed is None:
                         continue
-                    if surface in seen_in_sentence:
+                    if clean_seed in seen_in_sentence:
                         continue
-                    seen_in_sentence.add(surface)
+                    seen_in_sentence.add(clean_seed)
 
                 for w in seen_in_sentence:
                     total_count[w] += 1
@@ -165,23 +364,27 @@ def _extract_kote_entries(min_freq: int, min_polarity_ratio: float) -> list[dict
                         pos_count[w] += 1
 
     out: list[dict] = []
-    for word, total in total_count.items():
+    for clean_seed, total in total_count.items():
         if total < min_freq:
             continue
-        neg = neg_count[word]
-        pos = pos_count[word]
+        neg = neg_count[clean_seed]
+        pos = pos_count[clean_seed]
         dominant = max(neg, pos)
         ratio = dominant / total if total else 0.0
         if ratio < min_polarity_ratio:
             continue
 
         polarity = "-1" if neg >= pos else "1"
+        category = _category_for_clean_seed(clean_seed, int(polarity))
         out.append({
-            "embed_text": word,
-            "word": word,
-            "word_root": word,
+            "embed_text": clean_seed,
+            "word": clean_seed,
+            "word_root": clean_seed,
+            "clean_seed": clean_seed,
             "polarity": polarity,
             "source": "kote",
+            "category": category,
+            "confidence_tier": "HIGH",
             "score_hint": round(ratio, 4),
             "count_hint": total,
             "neg_count": neg,
@@ -191,15 +394,19 @@ def _extract_kote_entries(min_freq: int, min_polarity_ratio: float) -> list[dict
     return out
 
 
+def _merge_key(row: dict) -> tuple[str, str]:
+    return (str(row["embed_text"]), str(row["polarity"]))
+
+
 def _merge_entries(knu: list[dict], kote: list[dict]) -> list[dict]:
-    merged: dict[str, dict] = {}
+    merged: dict[tuple[str, str], dict] = {}
 
     for row in knu:
-        key = row["embed_text"]
+        key = _merge_key(row)
         merged[key] = row
 
     for row in kote:
-        key = row["embed_text"]
+        key = _merge_key(row)
         if key in merged:
             existing = merged[key]
             src = existing.get("source", "")
@@ -217,11 +424,12 @@ def _merge_entries(knu: list[dict], kote: list[dict]) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build emotion seed JSONL from KOTE + KNU.")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--rejected-output", type=Path, default=DEFAULT_REJECTED_OUTPUT)
     parser.add_argument("--min-freq", type=int, default=20)
     parser.add_argument("--min-polarity-ratio", type=float, default=0.7)
     args = parser.parse_args()
 
-    knu = _read_knu_entries()
+    knu, rejected = _read_knu_entries_with_rejected()
     kote = _extract_kote_entries(
         min_freq=args.min_freq,
         min_polarity_ratio=args.min_polarity_ratio,
@@ -233,10 +441,17 @@ def main() -> None:
         for row in merged:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
+    args.rejected_output.parent.mkdir(parents=True, exist_ok=True)
+    with args.rejected_output.open("w", encoding="utf-8") as f:
+        for row in rejected:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
     print(f"KNU entries   : {len(knu)}")
+    print(f"KNU rejected  : {len(rejected)}")
     print(f"KOTE entries  : {len(kote)}")
     print(f"Merged entries: {len(merged)}")
     print(f"Output        : {args.output}")
+    print(f"Rejected      : {args.rejected_output}")
 
 
 if __name__ == "__main__":
