@@ -21,5 +21,24 @@ class VideoRankRequest(BaseModel):
     top_n: int = 20
 
 
+class VideoRankItem(BaseModel):
+    video_id: str
+    score: float
+
+
 class VideoRankResponse(BaseModel):
-    ranked_video_ids: list[str]
+    ranked_videos: list[VideoRankItem]
+
+
+class VideoClusterRequest(BaseModel):
+    videos: list[VideoItem]
+    n_clusters: int | None = None
+
+
+class VideoClusterResult(BaseModel):
+    cluster_id: int
+    video_ids: list[str]
+
+
+class VideoClusterResponse(BaseModel):
+    clusters: list[VideoClusterResult]

@@ -55,13 +55,16 @@ def rank_by_cosine(
     # 유사도 내림차순 정렬 후 top_n 선택
     top_indices = np.argsort(scores)[::-1][: min(top_n, len(videos))]
 
-    ranked_ids = [videos[i]["video_id"] for i in top_indices]
+    ranked = [
+        {"video_id": videos[i]["video_id"], "score": float(scores[i])}
+        for i in top_indices
+    ]
     logger.info(
         "video_ranker: keyword=%r candidates=%d top_n=%d returned=%d top_score=%.4f",
         keyword,
         len(videos),
         top_n,
-        len(ranked_ids),
-        float(scores[top_indices[0]]) if len(top_indices) > 0 else 0.0,
+        len(ranked),
+        ranked[0]["score"] if ranked else 0.0,
     )
-    return ranked_ids
+    return ranked
