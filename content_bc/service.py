@@ -2,8 +2,17 @@
 import logging
 
 from content_bc.modules.transcript_loader import load_transcript
+from content_bc.modules.video_clusterer import cluster_videos
 from content_bc.modules.video_ranker import rank_by_cosine
-from content_bc.schemas import TranscriptResponseDto, VideoRankRequest, VideoRankResponse
+from content_bc.schemas import (
+    TranscriptResponseDto,
+    VideoClusterRequest,
+    VideoClusterResponse,
+    VideoClusterResult,
+    VideoRankItem,
+    VideoRankRequest,
+    VideoRankResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +50,21 @@ class ContentService:
                 transcript_status="failed",
             )
 
+    def cluster_videos(self, request: VideoClusterRequest) -> VideoClusterResponse:
+        clusters = cluster_videos(
+            videos=[v.model_dump() for v in request.videos],
+            n_clusters=request.n_clusters,
+        )
+        return VideoClusterResponse(
+            clusters=[VideoClusterResult(**c) for c in clusters]
+        )
+
     def rank_videos(self, request: VideoRankRequest) -> VideoRankResponse:
-        ranked_ids = rank_by_cosine(
+        ranked = rank_by_cosine(
             keyword=request.keyword,
             videos=[v.model_dump() for v in request.videos],
             top_n=request.top_n,
         )
-        return VideoRankResponse(ranked_video_ids=ranked_ids)
+        return VideoRankResponse(
+            ranked_videos=[VideoRankItem(video_id=r["video_id"], score=r["score"]) for r in ranked]
+        )

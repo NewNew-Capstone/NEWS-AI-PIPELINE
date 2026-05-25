@@ -18,6 +18,7 @@ youtube-transcript-api>=0.6.3
 langdetect
 kiwipiepy
 sentence-transformers
+scikit-learn
 qdrant-client
 redis
 fasttext-wheel
