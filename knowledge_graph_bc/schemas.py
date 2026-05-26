@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -160,4 +162,32 @@ class RealtimeClickedVideoIngestResponse(BaseModel):
     selected_video_id: str
     queued_count: int
     skipped_existing_count: int
+    current_graph: ComparisonGraphResponse | None = None
+
+
+class ClickedVideo(BaseModel):
+    video_id: str = Field(min_length=1, max_length=100)
+    title: str = ""
+    description: str | None = None
+    country_code: str | None = None
+    language: str | None = None
+    channel_id: str | None = None
+    channel_name: str | None = None
+    published_at: str | None = None
+    thumbnail_url: str | None = None
+    view_count: float | None = None
+
+
+class ClickedVideoCompareRequest(BaseModel):
+    keyword: str = Field(min_length=1, max_length=200)
+    max_per_country: int = Field(default=3, ge=1, le=20)
+    selected_video: ClickedVideo
+    related_candidates: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ClickedVideoCompareResponse(BaseModel):
+    request_id: str
+    selected_video_id: str
+    queued_count: int = 0
+    skipped_existing_count: int = 0
     current_graph: ComparisonGraphResponse | None = None

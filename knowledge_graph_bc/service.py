@@ -2,14 +2,25 @@ from __future__ import annotations
 
 import logging
 import re
+import uuid
 from collections import Counter
 from typing import Any, Callable
 
 import numpy as np
 
+from knowledge_graph_bc.comparison_scoring import (
+    DEFAULT_COMPARISON_SCORING_WEIGHTS,
+    ComparisonScoringFeatures,
+    ComparisonScoringWeights,
+    clamp_unit,
+    score_comparison_features,
+)
 from knowledge_graph_bc.keyword_expander import MultilingualKeywordExpander
 from knowledge_graph_bc.neo4j_client import Neo4jClient, get_neo4j_client
 from knowledge_graph_bc.schemas import (
+    ClickedVideo,
+    ClickedVideoCompareRequest,
+    ClickedVideoCompareResponse,
     ComparisonGraphResponse,
     ComparisonHomeResponse,
     CountryPerspective,
@@ -99,9 +110,11 @@ class KnowledgeGraphComparisonService:
         client: Neo4jClient | None = None,
         *,
         semantic_similarity_fn: Callable[[str, str], float | None] | None = None,
+        scoring_weights: ComparisonScoringWeights = DEFAULT_COMPARISON_SCORING_WEIGHTS,
     ) -> None:
         self.client = client or get_neo4j_client()
         self._semantic_similarity_fn = semantic_similarity_fn
+        self.scoring_weights = scoring_weights
 
     def get_comparison_home(self, limit: int = 5) -> ComparisonHomeResponse:
         safe_limit = self._safe_limit(limit)
@@ -298,6 +311,36 @@ class KnowledgeGraphComparisonService:
             nodes=nodes,
             edges=edges,
             country_perspectives=perspectives,
+        )
+
+    def compare_clicked_video(self, payload: ClickedVideoCompareRequest) -> ClickedVideoCompareResponse:
+        request_id = f"rt-{uuid.uuid4().hex[:10]}"
+        selected_video = payload.selected_video
+        selected_video_id = selected_video.video_id.strip()
+        safe_limit = self._safe_limit(payload.max_per_country)
+
+        try:
+            graph = self.get_comparison_graph(
+                video_id=selected_video_id,
+                limit_per_country=safe_limit,
+                scope=SCOPE_ALL,
+            )
+            skipped_existing_count = 1
+        except VideoNotFoundError:
+            graph = self.get_comparison_graph_for_source_video(
+                self._clicked_video_to_summary(selected_video),
+                keyword=payload.keyword,
+                limit_per_country=safe_limit,
+                scope=SCOPE_ALL,
+            )
+            skipped_existing_count = 0
+
+        return ClickedVideoCompareResponse(
+            request_id=request_id,
+            selected_video_id=selected_video_id,
+            queued_count=0,
+            skipped_existing_count=skipped_existing_count,
+            current_graph=graph,
         )
 
     def get_comparison_graph_for_source_video(
@@ -753,22 +796,30 @@ class KnowledgeGraphComparisonService:
             if entity_overlap:
                 reasons.append(f"공유 엔티티: {', '.join(sorted(entity_overlap)[:5])}")
 
-            score = self._base_video_score(row)
-            score += len(issue_overlap) * 5.0
-            score += len(shared_keywords) * 2.0
-            score += len(entity_overlap) * 3.0
-
             candidate_opinion = self._extract_opinion_score(row)
             opinion_distance: float | None = None
             similarity_score: float | None = None
             semantic_similarity: float | None = None
-            if include_semantic and source_text:
+            needs_similarity_fallback = source_opinion_score is None or candidate_opinion is None
+            if source_text and include_semantic:
                 semantic_similarity = self._semantic_similarity(source_text, self._semantic_text(row))
-                if semantic_similarity is not None:
-                    score += semantic_similarity * 4.0
-                    if semantic_similarity >= SEMANTIC_MATCH_THRESHOLD:
-                        reasons.append(f"의미 유사도: {semantic_similarity:.2f}")
-                    similarity_score = semantic_similarity
+            elif source_text and needs_similarity_fallback:
+                semantic_similarity = self._lexical_similarity(source_text, self._semantic_text(row))
+            if semantic_similarity is not None:
+                similarity_score = semantic_similarity
+                if semantic_similarity >= SEMANTIC_MATCH_THRESHOLD:
+                    reasons.append(f"의미 유사도: {semantic_similarity:.2f}")
+
+            features = ComparisonScoringFeatures(
+                issue_overlap_count=len(issue_overlap),
+                shared_keyword_count=len(shared_keywords),
+                shared_entity_count=len(entity_overlap),
+                semantic_similarity=semantic_similarity or 0.0,
+                analysis_success=self._analysis_success(row),
+                view_score=self._view_score(row),
+                published_at=bool(summary.published_at),
+            )
+            score = score_comparison_features(features, self.scoring_weights)
 
             if source_opinion_score is not None and candidate_opinion is not None:
                 opinion_distance = abs(source_opinion_score - candidate_opinion)
@@ -869,6 +920,19 @@ class KnowledgeGraphComparisonService:
             "issue_props": issue_props,
             "entity_props": [],
         }
+
+    def _clicked_video_to_summary(self, selected_video: ClickedVideo) -> VideoSummary:
+        return VideoSummary(
+            video_id=selected_video.video_id,
+            title=selected_video.title,
+            description=selected_video.description,
+            thumbnail_url=selected_video.thumbnail_url,
+            channel_name=selected_video.channel_name,
+            published_at=selected_video.published_at,
+            view_count=float(selected_video.view_count or 0.0),
+            country_code=selected_video.country_code,
+            language=selected_video.language,
+        )
 
     def _summary_to_node(self, summary: VideoSummary, node_type: str) -> GraphNode:
         return GraphNode(
@@ -1071,6 +1135,20 @@ class KnowledgeGraphComparisonService:
             logger.warning("semantic similarity fallback disabled: %s", exc)
             return None
 
+    def _lexical_similarity(self, source_text: str, candidate_text: str) -> float | None:
+        source_tokens = Counter(token.lower() for token in self._tokenize_text(source_text))
+        candidate_tokens = Counter(token.lower() for token in self._tokenize_text(candidate_text))
+        if not source_tokens or not candidate_tokens:
+            return None
+        intersection = set(source_tokens) & set(candidate_tokens)
+        numerator = sum(source_tokens[token] * candidate_tokens[token] for token in intersection)
+        source_norm = float(np.linalg.norm(list(source_tokens.values())))
+        candidate_norm = float(np.linalg.norm(list(candidate_tokens.values())))
+        denominator = source_norm * candidate_norm
+        if denominator <= 0.0:
+            return None
+        return self._bounded_similarity(numerator / denominator)
+
     def _bounded_similarity(self, value: float | None) -> float | None:
         if value is None:
             return None
@@ -1098,13 +1176,20 @@ class KnowledgeGraphComparisonService:
 
     def _base_video_score(self, row: dict[str, Any]) -> float:
         summary = self._row_to_summary(row)
-        score = 0.0
-        if (summary.analysis_status or "SUCCESS").upper() == "SUCCESS":
-            score += 1.0
-        score += min(summary.view_count, 1_000_000.0) / 1_000_000.0
-        if summary.published_at:
-            score += 0.3
-        return score
+        features = ComparisonScoringFeatures(
+            analysis_success=self._analysis_success(row),
+            view_score=self._view_score(row),
+            published_at=bool(summary.published_at),
+        )
+        return score_comparison_features(features, self.scoring_weights)
+
+    def _analysis_success(self, row: dict[str, Any]) -> bool:
+        summary = self._row_to_summary(row)
+        return (summary.analysis_status or "SUCCESS").upper() == "SUCCESS"
+
+    def _view_score(self, row: dict[str, Any]) -> float:
+        summary = self._row_to_summary(row)
+        return clamp_unit(min(summary.view_count, 1_000_000.0) / 1_000_000.0)
 
     def _relation_type(self, reasons: list[str]) -> str:
         if any(reason.startswith("같은 이슈") for reason in reasons):

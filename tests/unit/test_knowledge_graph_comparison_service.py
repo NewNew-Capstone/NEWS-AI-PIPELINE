@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from knowledge_graph_bc.schemas import VideoSummary
+from knowledge_graph_bc.schemas import ClickedVideo, ClickedVideoCompareRequest, VideoSummary
 from knowledge_graph_bc.service import KnowledgeGraphComparisonService
 
 
@@ -574,8 +574,57 @@ def test_comparison_graph_fallback_when_opinion_score_missing() -> None:
 
     edge = next(edge for edge in response.edges if edge.target == "video:us001")
     assert edge.opinion_distance is None
-    assert edge.similarity_score is None
+    assert edge.similarity_score is not None
     assert any("opinion_score 없음으로 내용 유사도 기반 fallback" in reason for reason in edge.reasons)
+
+
+def test_clicked_video_compare_uses_temporary_source_when_neo4j_source_missing() -> None:
+    service = KnowledgeGraphComparisonService(
+        client=FakeNeo4jClient(
+            [
+                _row(
+                    video_id="us001",
+                    title="Trump Taiwan policy",
+                    country_code="US",
+                    language="en",
+                    keywords=["trump", "taiwan"],
+                    issue_id="trump_taiwan_2026_demo",
+                    cluster_type=None,
+                ),
+                _row(
+                    video_id="cn001",
+                    title="特朗普 台湾 问题",
+                    country_code="CN",
+                    language="zh",
+                    keywords=["特朗普", "台湾"],
+                    issue_id="trump_taiwan_2026_demo",
+                    cluster_type=None,
+                ),
+            ],
+            enable_direct_issue_lookup=True,
+        ),
+        semantic_similarity_fn=lambda _source, _candidate: 0.7,
+    )
+    service._expand_match_keywords = lambda keywords: keywords + ["trump", "taiwan", "特朗普", "台湾"]  # type: ignore[method-assign]
+
+    response = service.compare_clicked_video(
+        ClickedVideoCompareRequest(
+            keyword="트럼프 대만",
+            max_per_country=3,
+            selected_video=ClickedVideo(
+                video_id="kr-missing",
+                title="트럼프 대만 한국 영상",
+                country_code="KR",
+                language="ko",
+            ),
+        )
+    )
+
+    assert response.selected_video_id == "kr-missing"
+    assert response.skipped_existing_count == 0
+    assert response.current_graph is not None
+    assert response.current_graph.source_video.video_id == "kr-missing"
+    assert {node.country_code for node in response.current_graph.nodes if node.node_type == "related"} == {"US", "CN"}
 
 
 def test_comparison_graph_skips_candidates_missing_country_or_language() -> None:
