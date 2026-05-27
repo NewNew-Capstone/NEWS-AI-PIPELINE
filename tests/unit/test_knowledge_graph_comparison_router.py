@@ -4,6 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import knowledge_graph_bc.router as router_mod
 from knowledge_graph_bc.schemas import (
+    ClickedVideo,
+    ClickedVideoCompareRequest,
+    ClickedVideoCompareResponse,
     ComparisonGraphResponse,
     ComparisonHomeResponse,
     GraphNode,
@@ -81,3 +84,29 @@ def test_expand_multilingual_keywords_endpoint_returns_expanded_terms() -> None:
     assert result.expanded_keywords.en[0] == "trump taiwan"
     assert result.expanded_keywords.zh[0] == "特朗普 台湾"
     expander.expand.assert_called_once_with("트럼프 대만", max_terms_per_language=3)
+
+
+def test_clicked_video_endpoint_returns_realtime_graph_response() -> None:
+    payload = ClickedVideoCompareRequest(
+        keyword="트럼프 대만",
+        selected_video=ClickedVideo(video_id="kr001", country_code="KR", language="ko"),
+    )
+    response = ClickedVideoCompareResponse(
+        request_id="rt-1",
+        selected_video_id="kr001",
+        skipped_existing_count=1,
+        current_graph=ComparisonGraphResponse(
+            applied_cluster_type="CURATION_MANUAL",
+            source_video=VideoSummary(video_id="kr001", country_code="KR", language="ko"),
+            nodes=[GraphNode(id="video:kr001", video_id="kr001", node_type="source")],
+        ),
+    )
+    service = MagicMock()
+    service.compare_clicked_video.return_value = response
+
+    with patch("knowledge_graph_bc.router.KnowledgeGraphComparisonService", return_value=service):
+        result = router_mod.compare_clicked_video(payload)
+
+    assert result == response
+    assert router_mod.get_realtime_compare_job("rt-1") == response
+    service.compare_clicked_video.assert_called_once_with(payload)

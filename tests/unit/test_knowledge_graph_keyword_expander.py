@@ -12,8 +12,8 @@ def test_expand_uses_fallback_when_no_api_key(monkeypatch) -> None:
 
     assert result.requested_keyword == "트럼프 대만"
     assert result.ko[0] == "트럼프 대만"
-    assert result.en[0].startswith("en:")
-    assert result.zh[0].startswith("zh-CN:")
+    assert result.en == ["trump taiwan", "trump", "taiwan"]
+    assert result.zh == ["特朗普 台湾", "特朗普", "台湾"]
 
 
 def test_expand_normalizes_and_limits_terms(monkeypatch) -> None:
@@ -25,10 +25,9 @@ def test_expand_normalizes_and_limits_terms(monkeypatch) -> None:
     )
     monkeypatch.setattr(expander, "_translate", lambda text, source, target: "  test  term  ")
 
-    result = expander.expand("  트럼프   대만  ", max_terms_per_language=1)
+    result = expander.expand("  새   키워드  ", max_terms_per_language=1)
 
-    assert result.requested_keyword == "트럼프 대만"
-    assert result.ko == ["트럼프 대만"]
+    assert result.requested_keyword == "새 키워드"
+    assert result.ko == ["새 키워드"]
     assert result.en == ["test term"]
     assert result.zh == ["test term"]
-

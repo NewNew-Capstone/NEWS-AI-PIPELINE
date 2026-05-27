@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 _BAD_CHARS = re.compile(r"[\r\n\t]+")
 _MULTI_SPACE = re.compile(r"\s+")
 
+_DEMO_TERM_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "트럼프": {"en": "trump", "zh": "特朗普"},
+    "대만": {"en": "taiwan", "zh": "台湾"},
+    "타이완": {"en": "taiwan", "zh": "台湾"},
+}
+
 
 @dataclass(frozen=True)
 class ExpandedKeywordSet:
@@ -34,6 +40,9 @@ class MultilingualKeywordExpander:
             raise ValueError("keyword_ko must not be blank")
 
         terms_limit = max(1, min(int(max_terms_per_language), 10))
+        if self._has_complete_demo_translation(base):
+            return self._expand_with_fallback(base, terms_limit)
+
         llm_result = self._expand_with_llm(base, terms_limit)
         if llm_result is not None:
             return llm_result
@@ -89,12 +98,58 @@ JSON 스키마:
             return None
 
     def _expand_with_fallback(self, base: str, limit: int) -> ExpandedKeywordSet:
-        en_seed = self._translate(base, source="ko", target="en")
-        zh_seed = self._translate(base, source="ko", target="zh-CN")
-        ko = self._normalize_terms([base], limit, include_seed=base)
-        en = self._normalize_terms([en_seed], limit)
-        zh = self._normalize_terms([zh_seed], limit)
+        ko_tokens = self._split_keyword_tokens(base)
+        en_token_terms = [
+            translated
+            for token in ko_tokens
+            if (translated := _DEMO_TERM_TRANSLATIONS.get(token, {}).get("en"))
+        ]
+        zh_token_terms = [
+            translated
+            for token in ko_tokens
+            if (translated := _DEMO_TERM_TRANSLATIONS.get(token, {}).get("zh"))
+        ]
+        en_seed = (
+            " ".join(en_token_terms)
+            if len(en_token_terms) == len(ko_tokens) and en_token_terms
+            else self._translate(base, source="ko", target="en")
+        )
+        zh_seed = (
+            " ".join(zh_token_terms)
+            if len(zh_token_terms) == len(ko_tokens) and zh_token_terms
+            else self._translate(base, source="ko", target="zh-CN")
+        )
+        en_terms = [en_seed] + [
+            translated
+            for token in ko_tokens
+            if (translated := _DEMO_TERM_TRANSLATIONS.get(token, {}).get("en"))
+        ]
+        zh_terms = [zh_seed] + [
+            translated
+            for token in ko_tokens
+            if (translated := _DEMO_TERM_TRANSLATIONS.get(token, {}).get("zh"))
+        ]
+
+        ko = self._normalize_terms(ko_tokens, limit, include_seed=base)
+        en = self._normalize_terms(en_terms, limit)
+        zh = self._normalize_terms(zh_terms, limit)
         return ExpandedKeywordSet(requested_keyword=base, ko=ko, en=en, zh=zh)
+
+    def _has_complete_demo_translation(self, base: str) -> bool:
+        tokens = self._split_keyword_tokens(base)
+        return bool(tokens) and all(token in _DEMO_TERM_TRANSLATIONS for token in tokens)
+
+    def _split_keyword_tokens(self, text: str) -> list[str]:
+        tokens = re.findall(r"[A-Za-z0-9가-힣一-龥]+", text)
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for token in tokens:
+            term = self._normalize_term(token)
+            if not term or term.lower() in seen:
+                continue
+            seen.add(term.lower())
+            normalized.append(term)
+        return normalized
 
     def _translate(self, text: str, source: str, target: str) -> str:
         try:

@@ -12,6 +12,8 @@ from knowledge_graph_bc.realtime_ingest_service import (
     RealtimeIngestService,
 )
 from knowledge_graph_bc.schemas import (
+    ClickedVideoCompareRequest,
+    ClickedVideoCompareResponse,
     ComparisonGraphResponse,
     ComparisonHomeResponse,
     ExpandedKeywords,
@@ -29,6 +31,7 @@ from knowledge_graph_bc.service import KnowledgeGraphComparisonService, VideoNot
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/kg", tags=["knowledge_graph"])
+_REALTIME_COMPARE_JOBS: dict[str, ClickedVideoCompareResponse] = {}
 
 
 def _service_unavailable(exc: Exception) -> HTTPException:
@@ -142,6 +145,20 @@ def realtime_ingest_clicked_video(
         raise _service_unavailable(exc) from exc
 
 
+@router.post("/realtime-compare/clicked-video", response_model=ClickedVideoCompareResponse)
+def compare_clicked_video(payload: ClickedVideoCompareRequest) -> ClickedVideoCompareResponse:
+    try:
+        response = KnowledgeGraphComparisonService().compare_clicked_video(payload)
+        _REALTIME_COMPARE_JOBS[response.request_id] = response
+        return response
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"status": "failed", "message": str(exc)}) from exc
+    except (Neo4jConfigError, OSError) as exc:
+        raise _service_unavailable(exc) from exc
+    except Exception as exc:
+        raise _service_unavailable(exc) from exc
+
+
 @router.get("/realtime-ingest/jobs/{request_id}", response_model=RealtimeIngestJobResponse)
 def realtime_ingest_job(request_id: str) -> RealtimeIngestJobResponse:
     try:
@@ -152,6 +169,17 @@ def realtime_ingest_job(request_id: str) -> RealtimeIngestJobResponse:
         raise _service_unavailable(exc) from exc
     except Exception as exc:
         raise _service_unavailable(exc) from exc
+
+
+@router.get("/realtime-compare/jobs/{request_id}", response_model=ClickedVideoCompareResponse)
+def get_realtime_compare_job(request_id: str) -> ClickedVideoCompareResponse:
+    response = _REALTIME_COMPARE_JOBS.get(request_id)
+    if response is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"status": "failed", "message": f"Compare job not found: {request_id}"},
+        )
+    return response
 
 
 @router.post("/expand-multilingual-keywords", response_model=MultilingualKeywordExpandResponse)
