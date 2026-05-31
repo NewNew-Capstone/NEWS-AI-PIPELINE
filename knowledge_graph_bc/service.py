@@ -14,6 +14,7 @@ from knowledge_graph_bc.comparison_scoring import (
     ComparisonScoringWeights,
     clamp_unit,
     score_comparison_features,
+    score_breakdown,
 )
 from knowledge_graph_bc.keyword_expander import MultilingualKeywordExpander
 from knowledge_graph_bc.neo4j_client import Neo4jClient, get_neo4j_client
@@ -219,7 +220,7 @@ class KnowledgeGraphComparisonService:
 
             seen_video_ids = {
                 self._row_to_summary(row).video_id
-                for row, _score, _shared_keywords, _reasons, _similarity_score, _opinion_distance in ranked
+                for row, _score, _shared_keywords, _reasons, _similarity_score, _opinion_distance, _score_breakdown in ranked
             }
             seen_video_ids.add(source_summary.video_id)
 
@@ -257,7 +258,7 @@ class KnowledgeGraphComparisonService:
 
             related_rows = [
                 row
-                for row, _score, _shared_keywords, _reasons, _similarity_score, _opinion_distance in ranked
+                for row, _score, _shared_keywords, _reasons, _similarity_score, _opinion_distance, _score_breakdown in ranked
             ]
             country_keywords = self._top_keywords_for_rows(related_rows, max_count=5)
             perspectives.append(
@@ -269,7 +270,7 @@ class KnowledgeGraphComparisonService:
                 )
             )
 
-            for row, score, shared_keywords, reasons, similarity_score, opinion_distance in ranked:
+            for row, score, shared_keywords, reasons, similarity_score, opinion_distance, score_breakdown_data in ranked:
                 summary = self._row_to_summary(row)
                 nodes.append(self._summary_to_node(summary, node_type="related"))
                 if not shared_keywords and not reasons:
@@ -283,6 +284,7 @@ class KnowledgeGraphComparisonService:
                         weight=round(score, 4),
                         similarity_score=self._rounded_or_none(similarity_score),
                         opinion_distance=self._rounded_or_none(opinion_distance),
+                        score_breakdown=score_breakdown_data,
                         keywords=shared_keywords[:5],
                         reasons=reasons,
                     )
@@ -398,7 +400,7 @@ class KnowledgeGraphComparisonService:
 
             related_rows = [
                 row
-                for row, _score, _shared_keywords, _reasons, _similarity_score, _opinion_distance in ranked
+                for row, _score, _shared_keywords, _reasons, _similarity_score, _opinion_distance, _score_breakdown in ranked
             ]
             country_keywords = self._top_keywords_for_rows(related_rows, max_count=5)
             perspectives.append(
@@ -410,7 +412,7 @@ class KnowledgeGraphComparisonService:
                 )
             )
 
-            for row, score, shared_keywords, reasons, similarity_score, opinion_distance in ranked:
+            for row, score, shared_keywords, reasons, similarity_score, opinion_distance, score_breakdown_data in ranked:
                 summary = self._row_to_summary(row)
                 nodes.append(self._summary_to_node(summary, node_type="related"))
                 if not shared_keywords and not reasons:
@@ -424,6 +426,7 @@ class KnowledgeGraphComparisonService:
                         weight=round(score, 4),
                         similarity_score=self._rounded_or_none(similarity_score),
                         opinion_distance=self._rounded_or_none(opinion_distance),
+                        score_breakdown=score_breakdown_data,
                         keywords=shared_keywords[:5],
                         reasons=reasons,
                     )
@@ -755,8 +758,8 @@ class KnowledgeGraphComparisonService:
         include_semantic: bool = False,
         sort_by_opinion_distance: bool = True,
         degrade_reasons: Counter[str] | None = None,
-    ) -> list[tuple[dict[str, Any], float, list[str], list[str], float | None, float | None]]:
-        ranked: list[tuple[dict[str, Any], float, list[str], list[str], float | None, float | None]] = []
+    ) -> list[tuple[dict[str, Any], float, list[str], list[str], float | None, float | None, dict[str, float]]]:
+        ranked: list[tuple[dict[str, Any], float, list[str], list[str], float | None, float | None, dict[str, float]]] = []
         source_keyword_set = {kw.lower(): kw for kw in source_keywords}
         source_match_set = {kw.lower(): kw for kw in self._dedupe_terms(source_keywords + list(source_match_keywords or []))}
 
@@ -820,6 +823,10 @@ class KnowledgeGraphComparisonService:
                 published_at=bool(summary.published_at),
             )
             score = score_comparison_features(features, self.scoring_weights)
+            breakdown = {
+                key: round(value, 4)
+                for key, value in score_breakdown(features, self.scoring_weights).items()
+            }
 
             if source_opinion_score is not None and candidate_opinion is not None:
                 opinion_distance = abs(source_opinion_score - candidate_opinion)
@@ -833,12 +840,14 @@ class KnowledgeGraphComparisonService:
                     degrade_reasons["missing_analysis_for_similarity"] += 1
 
             if reasons:
-                ranked.append((row, score, shared_keywords, reasons, similarity_score, opinion_distance))
+                ranked.append((row, score, shared_keywords, reasons, similarity_score, opinion_distance, breakdown))
             elif degrade_reasons is not None:
                 degrade_reasons["candidate_no_relation_signal"] += 1
 
-        def _sort_key(item: tuple[dict[str, Any], float, list[str], list[str], float | None, float | None]) -> tuple[float, float]:
-            _row, relevance, _shared, _reasons, _similarity, distance = item
+        def _sort_key(
+            item: tuple[dict[str, Any], float, list[str], list[str], float | None, float | None, dict[str, float]]
+        ) -> tuple[float, float]:
+            _row, relevance, _shared, _reasons, _similarity, distance, _breakdown = item
             if not sort_by_opinion_distance or distance is None:
                 # fallback rows: keep original relevance ordering
                 return (float("inf"), -relevance)

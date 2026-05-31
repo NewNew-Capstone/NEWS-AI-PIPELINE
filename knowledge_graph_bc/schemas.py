@@ -60,6 +60,7 @@ class GraphEdge(BaseModel):
     weight: float
     similarity_score: float | None = None
     opinion_distance: float | None = None
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
     keywords: list[str] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list)
 

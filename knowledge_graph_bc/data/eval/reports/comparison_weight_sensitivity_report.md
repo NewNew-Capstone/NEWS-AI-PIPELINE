@@ -1,8 +1,8 @@
 # 비교 추천 가중치 민감도 분석 리포트
 
-- 생성시각(UTC): `2026-05-26T05:10:40.348710+00:00`
+- 생성시각(UTC): `2026-05-30T06:33:42.929461+00:00`
 - 평가셋: `knowledge_graph_bc/data/eval/comparison_weight_eval.jsonl`
-- 평가 row 수: `50`, 그룹 수: `6`
+- 평가 row 수: `120`, 그룹 수: `12`
 - 관련 후보 기준: `expected_relevance >= 3`
 - Baseline 가중치: `{'issue_overlap': 5.0, 'shared_keyword': 2.0, 'shared_entity': 3.0, 'semantic_similarity': 4.0, 'analysis_success': 1.0, 'view_score': 1.0, 'published_at': 0.3}`
 
@@ -18,9 +18,9 @@
 - mean nDCG@3=1.0000, Recall@3=1.0000, MRR=1.0000, Top3 relevant count=3.00
 
 ## 3) 전체 Sweep 요약
-- nDCG@3: min=0.7654, median=1.0000, max=1.0000
-- Recall@3: min=0.6667, median=1.0000, max=1.0000
-- Baseline 대비 순위 안정성: Spearman median=0.9373, Top3 Jaccard median=1.0000
+- nDCG@3: min=0.8631, median=1.0000, max=1.0000
+- Recall@3: min=0.8056, median=1.0000, max=1.0000
+- Baseline 대비 순위 안정성: Spearman median=0.9717, Top3 Jaccard median=1.0000
 
 ## 4) 안정 상위 조합
 | variant | nDCG@3 | Recall@3 | MRR | Top3 relevant | Top3 Jaccard | Spearman |
@@ -30,25 +30,25 @@
 | `double_analysis_success` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 1.0000 |
 | `ablate_published_at` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 1.0000 |
 | `double_published_at` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 1.0000 |
-| `double_semantic_similarity` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9944 |
-| `double_view_score` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9944 |
-| `grid__issue_overlapx0.50_shared_keywordx0.50_semantic_similarityx1.50` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9944 |
-| `grid__issue_overlapx0.50_shared_keywordx0.50_semantic_similarityx2.00` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9944 |
-| `grid__issue_overlapx0.50_shared_keywordx1.00_semantic_similarityx0.50` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9944 |
+| `double_semantic_similarity` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9980 |
+| `double_view_score` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9980 |
+| `grid__issue_overlapx0.50_shared_keywordx0.50_semantic_similarityx1.50` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9980 |
+| `grid__issue_overlapx0.50_shared_keywordx0.50_semantic_similarityx2.00` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9980 |
+| `grid__issue_overlapx0.50_shared_keywordx1.00_semantic_similarityx0.50` | 1.0000 | 1.0000 | 1.0000 | 3.00 | 1.0000 | 0.9980 |
 
 ## 5) 취약 하위 조합
 | variant | nDCG@3 | Recall@3 | MRR | Top3 relevant | Top3 Jaccard | Spearman |
 |---|---:|---:|---:|---:|---:|---:|
-| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx0.00` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9254 |
-| `grid__issue_overlapx0.00_shared_keywordx2.00_semantic_similarityx0.00` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9254 |
-| `ablate_issue_overlap` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx0.50_semantic_similarityx1.50` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx0.50_semantic_similarityx2.00` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx1.00_semantic_similarityx0.50` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx1.00_semantic_similarityx1.50` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx1.00_semantic_similarityx2.00` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx0.50` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
-| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx1.00` | 0.7654 | 0.6667 | 1.0000 | 2.00 | 0.5000 | 0.9349 |
+| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx0.00` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9677 |
+| `grid__issue_overlapx0.00_shared_keywordx2.00_semantic_similarityx0.00` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9677 |
+| `ablate_issue_overlap` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx1.00_semantic_similarityx1.50` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx1.00_semantic_similarityx2.00` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx0.50` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx1.00` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx1.50` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx1.50_semantic_similarityx2.00` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
+| `grid__issue_overlapx0.00_shared_keywordx2.00_semantic_similarityx0.50` | 0.8631 | 0.8056 | 1.0000 | 2.42 | 0.7083 | 0.9717 |
 
 ## 6) 해석
 - `ablate_issue_overlap`에서 품질이 하락하면 같은 이슈 노드를 강하게 둔 이유를 설명할 수 있습니다.
