@@ -13,7 +13,7 @@ from analysis_bc.schemas import SpanLabelDto
 logger = logging.getLogger(__name__)
 
 _FALLBACK: dict = {
-    "summary_text": "",
+    "summary_text": "[LLM 안 탐] 영상 요약 생성에 실패했습니다.",
     "perspective_summary": "",
     "evidence_summary": "",
     "tone_label": "",
@@ -58,6 +58,8 @@ class BiasSummarizer:
             logger.debug("summarize json slice: %s", text[start:end])
             result: dict = json.loads(text[start:end])
             logger.debug("summarize result: %s", result)
+            if not str(result.get("summary_text", "")).strip():
+                return dict(_FALLBACK)
             return result
         except json.JSONDecodeError as e:
             logger.error("summarize json parse failed: %s | raw: %s", e, text)
@@ -168,10 +170,18 @@ class BiasSummarizer:
 {opinion_text}
 
 아래 1가지를 한국어로 간결하게 작성해줘.
+뉴스 사건의 핵심 내용만 2~3문장으로 요약해.
+다음 내용은 요약에 절대 포함하지 마:
+- URL, 링크, 유튜브 채널 주소
+- 해시태그
+- 구독/좋아요/알림 설정 요청
+- 저작권 고지, 무단 전재/재배포 금지 문구
+- 기자명, 채널 홍보, 출처 홍보 문구
+- 영상 설명란에 들어간 홍보성 문장
 JSON 형식으로만 응답해줘.
 
 {{
-  "summary_text": "사실 문장 기반 객관적 요약 (3문장 이내)"
+  "summary_text": "홍보 문구, URL, 해시태그, 저작권 고지를 제외하고 뉴스 핵심 내용만 2~3문장으로 요약"
 }}
 """.strip()
 
@@ -219,6 +229,7 @@ JSON 형식으로만 응답해줘.
 뉴스 영상의 주관성 점수 근거를 사용자에게 설명해줘.
 사용자가 "왜 이 영상이 이 주관성 점수를 받았는지" 쉽게 이해할 수 있도록 자연스럽게 작성해.
 반드시 아래 제공된 점수와 근거만 사용하고, 새로운 사실이나 원인을 추론하지 마.
+단순히 수치를 나열하지 말고, 이 영상이 사건을 어떤 보도 관점이나 표현 방식으로 전달하는지 먼저 설명해.
 
 [언어]
 {language}
@@ -258,10 +269,13 @@ JSON 형식으로만 응답해줘.
 - overall_bias_score, opinion_score, emotion_score, fact_ratio 같은 내부 변수명은 절대 사용하지 않기
 - "주관성", "감정성", "사실비중" 같은 딱딱한 분석 용어도 되도록 사용하지 않기
 - 산식, 가중치, 제목-본문 괴리 점수는 언급하지 않기
-- 숫자는 꼭 필요할 때만 퍼센트로 간단히 표현
+- 숫자는 꼭 필요할 때만 퍼센트로 간단히 표현하고, 문장 전체를 숫자 설명으로만 채우지 않기
 - 첫 문장은 반드시 위 주관성 점수 구간 기준과 일치하게 설명
 - 41~60점 구간은 "낮은 편"이라고 표현하지 말고, "의견과 정보가 섞여 있는 수준" 또는 "중간 수준"이라고 설명
+- 첫 문장에는 점수 구간 설명과 함께 영상의 보도 관점 또는 표현 방식이 드러나야 함
 - 이어서 보도자의 해석이나 주장, 감정이 실린 표현, 사실 전달 문장 중 점수에 영향을 준 핵심 이유를 설명
+- [보도자의 해석이나 주장이 들어간 문장 예시] 또는 [감정이 실린 표현 예시]가 있으면, 그 표현을 일반화하지 말고 한 가지 이상 자연스럽게 반영
+- 피해야 할 문장: "전체 내용의 n%는 사실이고, n%는 의견입니다"처럼 수치만 반복하는 문장
 
 {{
   "score_reason_summary": "사용자 친화적인 주관성 점수 근거 설명"
