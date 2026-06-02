@@ -115,11 +115,24 @@ class TestBiasSummarizer:
             language="ko",
         )
         assert result == {
-            "summary_text": "",
+            "summary_text": "[LLM 안 탐] 영상 요약 생성에 실패했습니다.",
             "perspective_summary": "",
             "evidence_summary": "",
             "tone_label": "",
         }
+
+    def test_summarize_empty_summary_marks_non_llm_fallback(self) -> None:
+        summarizer = _make_mock_summarizer(response_text=json.dumps({"summary_text": ""}, ensure_ascii=False))
+
+        result = summarizer.summarize(
+            fact_sentences=[_classified(1)],
+            opinion_sentences=[],
+            span_labels=[],
+            title="제목",
+            language="ko",
+        )
+
+        assert result["summary_text"].startswith("[LLM 안 탐]")
 
     def test_summarize_empty_sentences(self) -> None:
         summarizer = _make_mock_summarizer()
@@ -214,6 +227,9 @@ class TestBiasSummarizer:
         assert "사실을 전달하는 문장 비율: 33%" in prompt
         assert "41~60점: 의견과 정보가 섞여 있음" in prompt
         assert '41~60점 구간은 "낮은 편"이라고 표현하지 말고' in prompt
+        assert "영상의 보도 관점 또는 표현 방식" in prompt
+        assert "문장 전체를 숫자 설명으로만 채우지 않기" in prompt
+        assert "수치만 반복하는 문장" in prompt
         assert "overall_bias_score = 0.4 * opinion_score" not in prompt
         assert "전체 편향 점수" in prompt
         assert "제목-본문 괴리 점수는 언급하지 않기" in prompt
