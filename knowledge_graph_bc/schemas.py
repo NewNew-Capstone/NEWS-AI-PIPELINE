@@ -192,3 +192,30 @@ class ClickedVideoCompareResponse(BaseModel):
     queued_count: int = 0
     skipped_existing_count: int = 0
     current_graph: ComparisonGraphResponse | None = None
+
+
+class ComparisonInsightRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    selected_video: dict[str, Any] = Field(default_factory=dict, alias="selectedVideo")
+    compared_video: dict[str, Any] = Field(default_factory=dict, alias="comparedVideo")
+    relation_edge: dict[str, Any] = Field(default_factory=dict, alias="relationEdge")
+    main_keywords: list[str] = Field(default_factory=list, alias="mainKeywords")
+    shared_keywords: list[str] = Field(default_factory=list, alias="sharedKeywords")
+    shared_entities: list[str] = Field(default_factory=list, alias="sharedEntities")
+    country_perspectives: list[dict[str, Any]] = Field(default_factory=list, alias="countryPerspectives")
+
+
+class ComparisonInsightRow(BaseModel):
+    label: str
+    selected: str
+    compared: str
+    detail: str
+
+
+class ComparisonInsightResponse(BaseModel):
+    summary: str
+    comparison_rows: list[ComparisonInsightRow] = Field(default_factory=list, alias="comparisonRows")
+    points: list[str] = Field(default_factory=list)
+    recommendation_reason: str = Field(default="", alias="recommendationReason")
+    llm_used: bool = Field(default=False, alias="llmUsed")
