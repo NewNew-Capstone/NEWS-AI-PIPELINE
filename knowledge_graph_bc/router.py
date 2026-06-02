@@ -6,6 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from knowledge_graph_bc.config import Neo4jConfigError
 from knowledge_graph_bc.keyword_expander import MultilingualKeywordExpander
+from knowledge_graph_bc.llm_difference_service import ComparisonInsightService
 from knowledge_graph_bc.neo4j_client import get_neo4j_client
 from knowledge_graph_bc.realtime_ingest_service import (
     RealtimeIngestJobNotFoundError,
@@ -14,6 +15,8 @@ from knowledge_graph_bc.realtime_ingest_service import (
 from knowledge_graph_bc.schemas import (
     ClickedVideoCompareRequest,
     ClickedVideoCompareResponse,
+    ComparisonInsightRequest,
+    ComparisonInsightResponse,
     ComparisonGraphResponse,
     ComparisonHomeResponse,
     ExpandedKeywords,
@@ -180,6 +183,21 @@ def get_realtime_compare_job(request_id: str) -> ClickedVideoCompareResponse:
             detail={"status": "failed", "message": f"Compare job not found: {request_id}"},
         )
     return response
+
+
+@router.post("/llm-difference", response_model=ComparisonInsightResponse)
+def llm_difference(payload: ComparisonInsightRequest) -> ComparisonInsightResponse:
+    try:
+        return ComparisonInsightService().summarize_difference(payload)
+    except Exception as exc:
+        logger.warning("Comparison LLM difference failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "failed",
+                "message": str(exc),
+            },
+        ) from exc
 
 
 @router.post("/expand-multilingual-keywords", response_model=MultilingualKeywordExpandResponse)
