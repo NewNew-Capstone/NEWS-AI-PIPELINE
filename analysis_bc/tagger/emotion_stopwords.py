@@ -19,6 +19,18 @@ LEGACY_EMOTION_STOPWORDS: frozenset[str] = frozenset(
 _DECISIONS_PATH = Path(__file__).with_name("emotion_stopword_review_decisions.json")
 
 
+def _surface_from_decision_item(item: Any) -> str | None:
+    if isinstance(item, str):
+        return item.strip() or None
+    if not isinstance(item, dict):
+        return None
+    for key in ("surface", "keyword", "keyword_text"):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
 def _load_review_decisions(path: Path = _DECISIONS_PATH) -> set[str]:
     if not path.exists():
         return set()
@@ -29,17 +41,15 @@ def _load_review_decisions(path: Path = _DECISIONS_PATH) -> set[str]:
         return set()
 
     words: set[str] = set()
-    for item in raw.get("block_confirmed", []):
-        if isinstance(item, dict):
-            surface = item.get("surface")
-            if isinstance(surface, str) and surface:
+    for section in (
+        "block_confirmed",
+        "review_promoted_from_added_data",
+        "auto_review_blocked",
+    ):
+        for item in raw.get(section, []):
+            surface = _surface_from_decision_item(item)
+            if surface:
                 words.add(surface)
-        elif isinstance(item, str) and item:
-            words.add(item)
-
-    for surface in raw.get("review_promoted_from_added_data", []):
-        if isinstance(surface, str) and surface:
-            words.add(surface)
 
     return words
 
@@ -57,6 +67,9 @@ def is_blocked_emotion_stopword(surface: str, form: str | None = None) -> bool:
     candidates = {surface}
     if form:
         candidates.add(form)
+        if not form.endswith("다"):
+            candidates.add(f"{form}다")
+            candidates.add(f"{form}하다")
 
     candidates.update(_strip_leading_digits(value) for value in list(candidates))
     candidates.discard("")

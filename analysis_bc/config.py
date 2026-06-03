@@ -38,6 +38,16 @@ EMOTION_POLARITY_FILTER_ENABLED = os.getenv("EMOTION_POLARITY_FILTER_ENABLED", "
 FASTTEXT_MODEL_PATH = os.getenv("FASTTEXT_MODEL_PATH", "analysis_bc/data/cc.ko.300.bin")
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+EMOTION_KEYWORD_LLM_FILTER_ENABLED = os.getenv(
+    "EMOTION_KEYWORD_LLM_FILTER_ENABLED",
+    "true",
+).lower() in {"1", "true", "yes", "y", "on"}
+EMOTION_KEYWORD_LLM_FILTER_MODEL = (
+    os.getenv("EMOTION_KEYWORD_LLM_FILTER_MODEL")
+    or os.getenv("ANTHROPIC_SUMMARY_MODEL")
+    or os.getenv("ANTHROPIC_MODEL")
+    or "claude-haiku-4-5-20251001"
+)
 
 # 운영 분석 요청 로그 저장(Postgres)
 # 예: postgresql+psycopg://user:password@host:5432/dbname

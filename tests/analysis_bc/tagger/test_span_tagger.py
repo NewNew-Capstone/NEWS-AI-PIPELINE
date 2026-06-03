@@ -41,7 +41,11 @@ def _make_token(form: str, tag: str, start: int, length: int) -> MagicMock:
 def _make_qdrant_hit(score: float, payload: dict) -> MagicMock:
     hit = MagicMock()
     hit.score = score
-    hit.payload = payload
+    hit.payload = dict(payload)
+    if "clean_seed" not in hit.payload and "embed_text" not in hit.payload:
+        clean_seed = hit.payload.get("word_root") or hit.payload.get("word")
+        if clean_seed:
+            hit.payload["clean_seed"] = clean_seed
     return hit
 
 
@@ -162,13 +166,124 @@ def test_search_emotion_uses_surface_not_morph_form_for_matched_word(
     mock_tagger.kiwi.tokenize.return_value = [
         _make_token("깨지", "VV", 0, 2),
     ]
-    hit = _make_qdrant_hit(1.0, {"word": "깨진", "word_root": "깨지", "polarity": "-1"})
+    hit = _make_qdrant_hit(
+        1.0,
+        {"word": "깨지다", "word_root": "깨지다", "clean_seed": "깨지다", "polarity": "-1"},
+    )
     mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
 
     result = mock_tagger.tag([sentence])
 
     assert len(result) == 1
-    assert result[0].matched_word == "깨진"
+    assert result[0].matched_word == "깨진다"
+    assert result[0].end_offset == 3
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("깨지다")
+
+
+@pytest.mark.parametrize(
+    ("text", "form", "tag", "start", "length", "expected_word", "expected_end"),
+    [
+        ("힘들다", "힘들", "VA", 0, 2, "힘들다", 3),
+        ("힘들어지고 있다", "힘들", "VA", 0, 2, "힘들어지고", 5),
+        ("힘든 상황이다", "힘들", "VA", 0, 2, "힘든", 2),
+    ],
+)
+def test_search_emotion_predicate_queries_base_form_and_expands_span(
+    mock_tagger: SpanTagger,
+    text: str,
+    form: str,
+    tag: str,
+    start: int,
+    length: int,
+    expected_word: str,
+    expected_end: int,
+) -> None:
+    sentence = _make_sentence(1, text)
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token(form, tag, start, length),
+    ]
+    hit = _make_qdrant_hit(1.0, {"word": "힘들다", "word_root": "힘들다", "polarity": "-2"})
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].start_offset == start
+    assert result[0].end_offset == expected_end
+    assert result[0].matched_word == expected_word
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("힘들다")
+
+
+@pytest.mark.parametrize(
+    ("text", "form", "tag", "start", "length", "expected_query", "expected_word", "expected_end"),
+    [
+        ("재밌어요", "재밌", "VA", 0, 2, "재밌다", "재밌어요", 4),
+        ("재밌는 영상이다", "재밌", "VA", 0, 2, "재밌다", "재밌는", 3),
+        ("싸우고 있다", "싸우", "VV", 0, 2, "싸우다", "싸우고", 3),
+        ("싸운다", "싸우", "VV", 0, 2, "싸우다", "싸운다", 3),
+    ],
+)
+def test_search_emotion_common_predicate_examples_expand_span(
+    mock_tagger: SpanTagger,
+    text: str,
+    form: str,
+    tag: str,
+    start: int,
+    length: int,
+    expected_query: str,
+    expected_word: str,
+    expected_end: int,
+) -> None:
+    sentence = _make_sentence(1, text)
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token(form, tag, start, length),
+    ]
+    hit = _make_qdrant_hit(1.0, {"word": expected_query, "word_root": expected_query, "polarity": "-1"})
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].start_offset == start
+    assert result[0].end_offset == expected_end
+    assert result[0].matched_word == expected_word
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with(expected_query)
+
+
+def test_search_emotion_noun_plus_xsa_keeps_existing_noun_span(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(1, "불안하다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("불안", "NNG", 0, 2),
+    ]
+    hit = _make_qdrant_hit(1.0, {"word": "불안", "word_root": "불안", "polarity": "-2"})
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].matched_word == "불안"
+    assert result[0].end_offset == 2
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("불안")
+
+
+def test_search_emotion_noun_keeps_existing_span_before_predicate(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(1, "분노가 크다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("분노", "NNG", 0, 2),
+    ]
+    hit = _make_qdrant_hit(1.0, {"word": "분노", "word_root": "분노", "polarity": "-2"})
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].matched_word == "분노"
+    assert result[0].end_offset == 2
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("분노")
 
 
 def test_search_emotion_no_match_returns_empty(mock_tagger: SpanTagger) -> None:
@@ -187,6 +302,206 @@ def test_search_emotion_no_match_returns_empty(mock_tagger: SpanTagger) -> None:
     result = mock_tagger.tag([sentence])
 
     assert result == []
+
+
+def test_search_emotion_blocks_known_general_false_positive_words(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(
+        2,
+        (
+            "지우다 흐르다 궁금하실 정한 똑같다 그렇다 어렵다 죄송합니다 "
+            "부르다 통하다 미치다 위대하다 내세우다 꺼내다 물어보다"
+        ),
+    )
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("지우", "VV", 0, 2),
+        _make_token("흐르", "VV", 4, 2),
+        _make_token("궁금", "XR", 8, 2),
+        _make_token("하", "XSA", 10, 1),
+        _make_token("정한", "NNG", 13, 2),
+        _make_token("똑같", "VA", 16, 2),
+        _make_token("그렇", "VA", 20, 2),
+        _make_token("어렵", "VA", 24, 2),
+        _make_token("죄송하", "VA", 28, 3),
+        _make_token("부르", "VV", 34, 2),
+        _make_token("통하", "VV", 38, 2),
+        _make_token("미치", "VV", 42, 2),
+        _make_token("위대", "XR", 46, 2),
+        _make_token("하", "XSA", 48, 1),
+        _make_token("내세우", "VV", 51, 3),
+        _make_token("꺼내", "VV", 56, 2),
+        _make_token("물어보", "VV", 60, 3),
+    ]
+
+    result = mock_tagger.tag([sentence])
+
+    assert result == []
+    mock_tagger.ft_model.get_word_vector.assert_not_called()
+    mock_tagger.qdrant.query_batch_points.assert_not_called()
+
+
+def test_search_emotion_blocks_broad_knu_general_nouns_but_keeps_real_emotions(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "친구 이야기 추진 재밌다 놀라다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("친구", "NNG", 0, 2),
+        _make_token("이야기", "NNG", 3, 3),
+        _make_token("추진", "NNG", 7, 2),
+        _make_token("재밌", "VA", 10, 2),
+        _make_token("놀라", "VV", 14, 2),
+    ]
+    hits = [
+        _make_batch_result([
+            _make_qdrant_hit(
+                1.0,
+                {"clean_seed": "재밌다", "polarity": "1", "category": "EVALUATIVE_WORD"},
+            )
+        ]),
+        _make_batch_result([
+            _make_qdrant_hit(
+                1.0,
+                {"clean_seed": "놀라다", "polarity": "1", "category": "EVALUATIVE_WORD"},
+            )
+        ]),
+    ]
+    mock_tagger.qdrant.query_batch_points.return_value = hits
+
+    result = mock_tagger.tag([sentence])
+
+    assert [span.matched_word for span in result] == ["재밌다", "놀라다"]
+    calls = [call.args[0] for call in mock_tagger.ft_model.get_word_vector.call_args_list]
+    assert calls == ["재밌다", "놀라다"]
+
+
+def test_search_emotion_requires_qdrant_clean_seed_match(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "싸우고 있다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("싸우", "VV", 0, 2),
+    ]
+    hit = _make_qdrant_hit(
+        1.0,
+        {"word": "화나다", "word_root": "화나다", "clean_seed": "화나다", "polarity": "-2"},
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence], debug=True)
+
+    assert result == []
+    assert mock_tagger.last_debug_trace is not None
+    token_traces = mock_tagger.last_debug_trace.sentences[0].tokens
+    assert token_traces[0].reject_reason == "seed_mismatch"
+
+
+def test_search_emotion_matches_broad_seed_canonical_seed(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "화난다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("화나", "VV", 0, 2),
+    ]
+    hit = _make_qdrant_hit(
+        0.95,
+        {
+            "clean_seed": "화가 치밀어 오르다",
+            "canonical_seed": "화나다",
+            "word_root": "화가 치밀어 오르다",
+            "polarity": "-2",
+            "category": "NEGATIVE_STATE",
+        },
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence], debug=True)
+
+    assert len(result) == 1
+    assert result[0].matched_word == "화난다"
+    assert mock_tagger.last_debug_trace is not None
+    assert mock_tagger.last_debug_trace.sentences[0].tokens[0].accepted is True
+
+
+def test_search_emotion_allows_high_confidence_direct_semantic_fallback_for_adjectives(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "서글픈 마음이다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("서글프", "VA", 0, 3),
+    ]
+    hit = _make_qdrant_hit(
+        0.96,
+        {"clean_seed": "슬픔", "polarity": "-2", "category": "DIRECT_EMOTION"},
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].matched_word == "서글픈"
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("서글프다")
+
+
+def test_search_emotion_allows_direct_semantic_fallback_for_emotion_like_nouns(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "공포감이 커졌다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("공포감", "NNG", 0, 3),
+    ]
+    hit = _make_qdrant_hit(
+        0.96,
+        {"clean_seed": "공포", "polarity": "-2", "category": "DIRECT_EMOTION"},
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].matched_word == "공포감"
+
+
+def test_search_emotion_rejects_semantic_fallback_for_generic_nouns(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "정책을 발표했다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("정책", "NNG", 0, 2),
+    ]
+    hit = _make_qdrant_hit(
+        0.99,
+        {"clean_seed": "불안", "polarity": "-2", "category": "DIRECT_EMOTION"},
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence], debug=True)
+
+    assert result == []
+    assert mock_tagger.last_debug_trace is not None
+    token_traces = mock_tagger.last_debug_trace.sentences[0].tokens
+    assert token_traces[0].reject_reason == "seed_mismatch"
+
+
+def test_search_emotion_rejects_low_score_semantic_fallback(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(2, "서글픈 마음이다")
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("서글프", "VA", 0, 3),
+    ]
+    hit = _make_qdrant_hit(
+        0.90,
+        {"clean_seed": "슬픔", "polarity": "-2", "category": "DIRECT_EMOTION"},
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence], debug=True)
+
+    assert result == []
+    assert mock_tagger.last_debug_trace is not None
+    token_traces = mock_tagger.last_debug_trace.sentences[0].tokens
+    assert token_traces[0].reject_reason == "seed_mismatch"
 
 
 def test_search_emotion_filters_short_tokens(mock_tagger: SpanTagger) -> None:
@@ -260,20 +575,47 @@ def test_search_emotion_excludes_stopword_and_keeps_emotion_token(mock_tagger: S
 
 
 def test_search_emotion_xr_tag_included(mock_tagger: SpanTagger) -> None:
-    """XR(어근) 태그 토큰도 처리된다 (심각하다 → 심각(XR))."""
+    """VA 감정 서술어는 기본형으로 쿼리하고 표면형 span을 유지한다."""
     sentence = _make_sentence(4, "매우 심각한 상황이다")
 
     mock_tagger.kiwi.tokenize.return_value = [
-        _make_token("심각", "XR", 3, 2),  # 표면형 "심각"
+        _make_token("심각하", "VA", 3, 3),
     ]
-    hit = _make_qdrant_hit(1.0, {"word": "심각한", "word_root": "심각", "polarity": "-2"})
+    hit = _make_qdrant_hit(
+        1.0,
+        {"word": "심각하다", "word_root": "심각하다", "clean_seed": "심각하다", "polarity": "-2"},
+    )
     mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
 
     result = mock_tagger.tag([sentence])
 
     assert len(result) == 1
-    assert result[0].matched_word == "심각"
+    assert result[0].matched_word == "심각한"
     assert result[0].label_type == SentenceLabelType.EMOTIONALLY_LOADED
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("심각하다")
+
+
+def test_search_emotion_xr_plus_xsa_keeps_existing_root_span(
+    mock_tagger: SpanTagger,
+) -> None:
+    sentence = _make_sentence(4, "끔찍하다")
+
+    mock_tagger.kiwi.tokenize.return_value = [
+        _make_token("끔찍", "XR", 0, 2),
+        _make_token("하", "XSA", 2, 1),
+    ]
+    hit = _make_qdrant_hit(
+        1.0,
+        {"word": "끔찍하다", "word_root": "끔찍하다", "clean_seed": "끔찍하다", "polarity": "-2"},
+    )
+    mock_tagger.qdrant.query_batch_points.return_value = [_make_batch_result([hit])]
+
+    result = mock_tagger.tag([sentence])
+
+    assert len(result) == 1
+    assert result[0].matched_word == "끔찍하다"
+    assert result[0].end_offset == 4
+    mock_tagger.ft_model.get_word_vector.assert_called_once_with("끔찍하다")
 
 
 def test_gate_failed_sentence_is_skipped(mock_tagger: SpanTagger) -> None:

@@ -212,9 +212,11 @@ __marimo__/
 # ML model weights
 analysis_bc/models/
 analysis_bc/data/*
+analysis_bc/data.zip
 
 
 # Local runtime/request logs
 logs/
 
-cc.ko.300.binanalysis_bc/data/eval/raw/
+cc.ko.300.bin
+analysis_bc/data/eval/raw/

@@ -15,12 +15,13 @@ from analysis_bc.schemas import (
     SentenceInputDto,
     SpanLabelDto,
 )
+from analysis_bc.tagger.emotion_stopwords import is_blocked_emotion_stopword
 
 logger = logging.getLogger(__name__)
 
 _TOP_N = 5
 
-_FRAME_POS: frozenset[str] = frozenset({"NNG", "NNP", "VV", "VA"})
+_FRAME_POS: frozenset[str] = frozenset({"NNG", "NNP", "VV"})
 _TOPIC_POS: frozenset[str] = frozenset({"NNG", "NNP"})
 _STOPWORDS: frozenset[str] = frozenset(
     {
@@ -49,10 +50,11 @@ _STOPWORDS: frozenset[str] = frozenset(
         "보도",
     }
 )
-_FOCUS_POS: frozenset[str] = frozenset({"NNG", "NNP", "VV", "VA", "XR"})
+_FOCUS_NOUN_POS: frozenset[str] = frozenset({"NNG", "NNP"})
 _FOCUS_TOP_N = 5
 _FOCUS_MIN_OCCURRENCE = 2
 _FOCUS_MIN_SENTENCE = 2
+_KEYWORD_NOUN_QUOTA = 2
 _FOCUS_STOPWORDS: frozenset[str] = _STOPWORDS | frozenset(
     {
         "kind",
@@ -104,6 +106,26 @@ _FOCUS_STOPWORDS: frozenset[str] = _STOPWORDS | frozenset(
 )
 
 
+def _is_predicate_tag(tag: str) -> bool:
+    return tag == "VV" or tag.startswith("VA")
+
+
+def _is_derivational_verb_tag(tag: str) -> bool:
+    return tag == "XSV"
+
+
+def _is_verb_tag(tag: str) -> bool:
+    return tag.startswith("VV")
+
+
+def _predicate_keyword_text(form: str) -> str:
+    return form if form.endswith("다") else f"{form}다"
+
+
+def _is_predicate_keyword_text(keyword: str) -> bool:
+    return keyword.endswith("다")
+
+
 @dataclass
 class _FocusStats:
     occurrence_count: int = 0
@@ -151,12 +173,9 @@ class KeywordExtractor:
         for sentence in target_sentences:
             seen_forms: set[str] = set()
             for token in self.kiwi.tokenize(sentence.sentence_text):
-                if token.tag not in _FOCUS_POS:
-                    continue
-
                 form = str(token.form).strip()
                 surface = sentence.sentence_text[token.start:token.start + token.len].strip()
-                keyword = self._focus_keyword_key(form, surface)
+                keyword = self._focus_keyword_key(form, surface, str(token.tag))
                 if keyword is None:
                     continue
 
@@ -189,14 +208,14 @@ class KeywordExtractor:
             score = normalize_score(0.8 * sentence_ratio + 0.2 * occurrence_ratio)
             rows.append(
                 FocusKeywordDto(
-                    keyword_text=self._focus_display_text(keyword, stats),
+                    keyword_text=keyword,
                     score=score,
                     occurrence_count=stats.occurrence_count,
                     sentence_count=stats.sentence_count,
                 )
             )
 
-        return sorted(
+        sorted_rows = sorted(
             rows,
             key=lambda row: (
                 -row.sentence_count,
@@ -204,7 +223,12 @@ class KeywordExtractor:
                 -row.score,
                 row.keyword_text,
             ),
-        )[:_FOCUS_TOP_N]
+        )
+        return self._ensure_noun_quota(
+            sorted_rows,
+            limit=_FOCUS_TOP_N,
+            noun_quota=_KEYWORD_NOUN_QUOTA,
+        )
 
     def _extract_emotion(
         self,
@@ -220,8 +244,72 @@ class KeywordExtractor:
             word = span.matched_word
             if not word or len(word) < 2:
                 continue
-            weights[word] = weights.get(word, 0.0) + clamp_score(span.score)
+            keyword = self._emotion_keyword_key(word)
+            if not keyword or len(keyword) < 2:
+                continue
+            if self._is_stopword(keyword) or is_blocked_emotion_stopword(keyword):
+                continue
+            weights[keyword] = weights.get(keyword, 0.0) + clamp_score(span.score)
         return self._to_relative_keywords(weights, BiasKeywordType.EMOTION)
+
+    def _emotion_keyword_key(self, matched_word: str) -> str:
+        word = matched_word.strip()
+        if not word:
+            return ""
+
+        try:
+            tokens = self.kiwi.tokenize(word)
+        except Exception:
+            logger.warning("emotion keyword tokenization failed: %s", word, exc_info=True)
+            return word
+
+        if not tokens:
+            return word
+
+        first = tokens[0]
+        form = str(first.form).strip()
+        tag = str(first.tag)
+        if form and _is_predicate_tag(tag):
+            return _predicate_keyword_text(form)
+        if form and _is_derivational_verb_tag(tag):
+            return _predicate_keyword_text(form)
+        if form and tag == "XR" and len(tokens) >= 2:
+            second = tokens[1]
+            if second.tag == "XSA" and second.form == "하":
+                return _predicate_keyword_text(f"{form}하")
+        if form and tag == "NNG" and len(tokens) >= 2:
+            second = tokens[1]
+            if second.tag == "XSV" and second.form == "하":
+                return _predicate_keyword_text(f"{form}하")
+        return word
+
+    def normalize_emotion_keyword(self, matched_word: str | None) -> str:
+        if not matched_word:
+            return ""
+        return self._emotion_keyword_key(matched_word)
+
+    def extract_emotion_filter_candidates(
+        self,
+        span_labels: list[SpanLabelDto],
+    ) -> list[str]:
+        candidates: list[str] = []
+        seen: set[str] = set()
+        for span in span_labels:
+            if span.label_type not in (
+                SentenceLabelType.EMOTIONALLY_LOADED,
+                SentenceLabelType.EMOTIONALLY_LOADED.value,
+            ):
+                continue
+            keyword = self.normalize_emotion_keyword(span.matched_word)
+            if not keyword or len(keyword) < 2:
+                continue
+            if self._is_stopword(keyword) or is_blocked_emotion_stopword(keyword):
+                continue
+            if keyword in seen:
+                continue
+            seen.add(keyword)
+            candidates.append(keyword)
+        return candidates
 
     def _extract_morpheme(
         self,
@@ -233,25 +321,50 @@ class KeywordExtractor:
         for sentence in sentences:
             sentence_weight = clamp_score(sentence.confidence)
             for token in self.kiwi.tokenize(sentence.sentence_text):
-                if token.tag not in valid_pos:
+                keyword = self._morpheme_keyword_key(
+                    str(token.form).strip(),
+                    str(token.tag),
+                    valid_pos,
+                )
+                if keyword is None:
                     continue
-                if len(token.form) < 2:
+                if self._is_stopword(keyword):
                     continue
-                if self._is_stopword(token.form):
-                    continue
-                weights[token.form] = weights.get(token.form, 0.0) + sentence_weight
+                weights[keyword] = weights.get(keyword, 0.0) + sentence_weight
         return self._to_relative_keywords(weights, keyword_type)
 
-    def _focus_keyword_key(self, form: str, surface: str) -> str | None:
-        candidates = [form, surface]
-        for candidate in candidates:
-            keyword = candidate.strip()
-            if len(keyword) < 2:
-                continue
-            if keyword.lower() in _FOCUS_STOPWORDS:
-                continue
-            return keyword
-        return None
+    def _morpheme_keyword_key(
+        self,
+        form: str,
+        tag: str,
+        valid_pos: frozenset[str],
+    ) -> str | None:
+        if tag in _FOCUS_NOUN_POS and tag in valid_pos:
+            keyword = form
+        elif _is_verb_tag(tag) and tag in valid_pos:
+            keyword = _predicate_keyword_text(form)
+        else:
+            return None
+
+        if len(keyword) < 2:
+            return None
+        return keyword
+
+    def _focus_keyword_key(self, form: str, surface: str, tag: str) -> str | None:
+        if tag in _FOCUS_NOUN_POS:
+            keyword = form.strip()
+        elif _is_verb_tag(tag):
+            keyword = _predicate_keyword_text(form.strip())
+        else:
+            return None
+
+        if len(keyword) < 2:
+            return None
+        if keyword.lower() in _FOCUS_STOPWORDS:
+            return None
+        if surface.strip().lower() in _FOCUS_STOPWORDS:
+            return None
+        return keyword
 
     def _focus_display_text(self, keyword: str, stats: _FocusStats) -> str:
         if not stats.surfaces:
@@ -285,7 +398,60 @@ class KeywordExtractor:
         if not keywords:
             return []
         sorted_list = sorted(keywords, key=lambda k: k.score, reverse=True)
-        return [keyword for keyword in sorted_list if not self._is_stopword(keyword.keyword_text)][:_TOP_N]
+        filtered = [
+            keyword
+            for keyword in sorted_list
+            if not self._is_stopword(keyword.keyword_text)
+        ]
+        return self._ensure_noun_quota(
+            filtered,
+            limit=_TOP_N,
+            noun_quota=_KEYWORD_NOUN_QUOTA,
+        )
+
+    def _ensure_noun_quota(
+        self,
+        rows: list,
+        *,
+        limit: int,
+        noun_quota: int,
+    ) -> list:
+        if len(rows) <= limit:
+            return rows[:limit]
+
+        selected = rows[:limit]
+        selected_keys = {row.keyword_text for row in selected}
+        noun_count = sum(
+            1 for row in selected
+            if not _is_predicate_keyword_text(row.keyword_text)
+        )
+        if noun_count >= noun_quota:
+            return selected
+
+        noun_candidates = [
+            row for row in rows
+            if (
+                row.keyword_text not in selected_keys
+                and not _is_predicate_keyword_text(row.keyword_text)
+            )
+        ]
+        if not noun_candidates:
+            return selected
+
+        out = selected[:]
+        replacement_count = min(noun_quota - noun_count, len(noun_candidates))
+        replace_index = len(out) - 1
+        for noun in noun_candidates[:replacement_count]:
+            while (
+                replace_index >= 0
+                and not _is_predicate_keyword_text(out[replace_index].keyword_text)
+            ):
+                replace_index -= 1
+            if replace_index < 0:
+                break
+            out[replace_index] = noun
+            replace_index -= 1
+        return out
 
     def _is_stopword(self, keyword: str) -> bool:
         normalized = keyword.strip().lower()
