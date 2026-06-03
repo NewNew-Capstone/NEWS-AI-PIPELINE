@@ -1,6 +1,8 @@
 import logging
 
 from analysis_bc.classifier import FactOpinionClassifier
+from analysis_bc.emotion_keyword_llm_filter import EmotionKeywordLlmFilter
+from analysis_bc.enums import SentenceLabelType
 from analysis_bc.evidence_extractor import EvidenceExtractor
 from analysis_bc.keyword_extractor import KeywordExtractor
 from analysis_bc.preprocessor import SentencePreprocessor
@@ -12,6 +14,7 @@ from analysis_bc.schemas import (
     ScoreReasonRequestDto,
     SummaryRequestDto,
     SentenceInputDto,
+    SpanLabelDto,
 )
 from analysis_bc.tagger.span_tagger import SpanTagger
 from analysis_bc.tagger.title_body_gap import GapResult, TitleBodyGapCalculator
@@ -29,6 +32,7 @@ class AnalysisService:
         self.scorer = BiasScorer()
         self.summarizer = BiasSummarizer()
         self.keyword_extractor = KeywordExtractor()
+        self.emotion_keyword_filter = EmotionKeywordLlmFilter()
         self.evidence_extractor = EvidenceExtractor()
 
     def analyze(self, request: AnalyzeRequestDto) -> BiasAnalysisResultDto:
@@ -63,6 +67,28 @@ class AnalysisService:
             sentences=sentences,
         )
         print(f"[서비스] TitleBodyGap 완료 — gap: {gap_result.gap_score:.4f}, std: {gap_result.gap_std:.4f}")
+
+        print("[서비스] EmotionKeywordLlmFilter 시작")
+        emotion_filter_candidates = self.keyword_extractor.extract_emotion_filter_candidates(
+            sentence_labels
+        )
+        kept_emotion_words = self.emotion_keyword_filter.filter_words(emotion_filter_candidates)
+        if kept_emotion_words is not None:
+            before_count = len(sentence_labels)
+            sentence_labels = self._filter_emotion_sentence_labels(
+                sentence_labels,
+                kept_emotion_words,
+            )
+            print(
+                "[서비스] EmotionKeywordLlmFilter 완료 — "
+                f"후보 {len(emotion_filter_candidates)}개, keep {len(kept_emotion_words)}개, "
+                f"span {before_count}→{len(sentence_labels)}"
+            )
+        else:
+            print(
+                "[서비스] EmotionKeywordLlmFilter 스킵/실패 — "
+                f"후보 {len(emotion_filter_candidates)}개, 기존 span 유지"
+            )
 
         print("[서비스] Scorer 시작")
         scores = self.scorer.calculate(
@@ -183,6 +209,25 @@ class AnalysisService:
             sentence_labels=sentence_labels,
             evidences=evidences,
         )
+
+    def _filter_emotion_sentence_labels(
+        self,
+        sentence_labels: list[SpanLabelDto],
+        kept_emotion_words: set[str] | frozenset[str],
+    ) -> list[SpanLabelDto]:
+        out: list[SpanLabelDto] = []
+        for span in sentence_labels:
+            if span.label_type not in (
+                SentenceLabelType.EMOTIONALLY_LOADED,
+                SentenceLabelType.EMOTIONALLY_LOADED.value,
+            ):
+                out.append(span)
+                continue
+
+            keyword = self.keyword_extractor.normalize_emotion_keyword(span.matched_word)
+            if keyword in kept_emotion_words:
+                out.append(span)
+        return out
 
     def summarize_score_reason_only(self, request: ScoreReasonRequestDto) -> str:
         return self.summarizer.summarize_score_reason(

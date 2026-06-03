@@ -71,13 +71,13 @@ def test_trace_collects_reasons_and_span() -> None:
         _make_token("중국", "NNP", 4, 2),   # proper_noun
         _make_token("무덤", "NNG", 7, 2),   # no_hit
         _make_token("약함", "NNG", 10, 2),  # below_threshold
-        _make_token("모호", "NNG", 13, 2),  # low_margin
+        _make_token("모호", "NNG", 13, 2),  # seed_mismatch
         _make_token("분노", "NNG", 16, 2),  # accepted
     ]
     tagger.qdrant.query_batch_points.return_value = [
         _make_batch_result([]),
-        _make_batch_result([_make_qdrant_hit(0.40)]),
-        _make_batch_result([_make_qdrant_hit(0.95, "모호"), _make_qdrant_hit(0.93, "애매")]),
+        _make_batch_result([_make_qdrant_hit(0.40, "약함")]),
+        _make_batch_result([_make_qdrant_hit(0.95, "애매")]),
         _make_batch_result([_make_qdrant_hit(0.95, "분노"), _make_qdrant_hit(0.70, "화")]),
     ]
 
@@ -96,7 +96,7 @@ def test_trace_collects_reasons_and_span() -> None:
     assert token_traces[2].reject_reason == "proper_noun"
     assert token_traces[3].reject_reason == "no_hit"
     assert token_traces[4].reject_reason == "below_threshold"
-    assert token_traces[5].reject_reason == "low_margin"
+    assert token_traces[5].reject_reason == "seed_mismatch"
     assert token_traces[6].accepted is True
     assert token_traces[6].created_span is not None
 
@@ -106,7 +106,7 @@ def test_debug_false_keeps_return_contract() -> None:
     sentence = _make_sentence(1, "분노가 폭발했다")
     tagger.kiwi.tokenize.return_value = [_make_token("분노", "NNG", 0, 2)]
     tagger.qdrant.query_batch_points.return_value = [
-        _make_batch_result([_make_qdrant_hit(0.95)])
+        _make_batch_result([_make_qdrant_hit(0.95, "분노")])
     ]
 
     result = tagger.tag([sentence], debug=False)

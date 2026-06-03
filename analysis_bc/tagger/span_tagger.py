@@ -43,8 +43,23 @@ logger = logging.getLogger(__name__)
 _HEALTH_CHECK_TTL = 30.0
 _MAX_LENGTH = 192
 
-_VALID_POS: frozenset[str] = frozenset({"NNG", "VV", "VA", "MAG", "XR"})
+_VALID_POS: frozenset[str] = frozenset({"NNG", "XR"})
 _PROPER_NOUN_POS: frozenset[str] = frozenset({"NNP"})
+_SPAN_BOUNDARY_CHARS: frozenset[str] = frozenset(
+    ".,!?;:()[]{}\"'“”‘’…·，。！？；：、"
+)
+_SEMANTIC_FALLBACK_MIN_SCORE = max(EMOTION_SIMILARITY_THRESHOLD, 0.93)
+_SEMANTIC_FALLBACK_NOUN_MARKERS: frozenset[str] = frozenset(
+    {
+        "분노", "화", "짜증", "혐오", "증오", "경악", "불안", "걱정", "공포", "두려",
+        "슬픔", "절망", "실망", "불만", "의심", "불신", "불쾌", "기쁨", "행복",
+        "감동", "감탄", "고마움", "안심", "신뢰", "즐거움", "연민", "죄책감",
+        "당황", "부끄러움", "귀찮음", "피로", "우려",
+    }
+)
+_SEMANTIC_FALLBACK_NOUN_SUFFIXES: frozenset[str] = frozenset(
+    {"감", "감정", "심", "증", "움", "픔"}
+)
 
 KOTE_LABELS = [
     "불평/불만", "환영/호의", "감동/감탄", "지긋지긋", "고마움", "슬픔", "화남/분노", "존경", "기대감",
@@ -77,6 +92,23 @@ def _hit_clean_seed(hit: object) -> str:
     return str(id(hit))
 
 
+def _hit_match_seed(hit: object) -> str | None:
+    seeds = _hit_match_seeds(hit)
+    return next(iter(seeds), None)
+
+
+def _hit_match_seeds(hit: object) -> frozenset[str]:
+    payload = getattr(hit, "payload", None) or {}
+    seeds: set[str] = set()
+    for key in ("clean_seed", "embed_text", "canonical_seed", "word_root", "word"):
+        value = payload.get(key)
+        if value:
+            seed = str(value).strip()
+            if seed:
+                seeds.add(seed)
+    return frozenset(seeds)
+
+
 def _dedupe_hits_by_clean_seed(hits: list) -> list:
     deduped = []
     seen: set[str] = set()
@@ -99,6 +131,7 @@ RejectReason = Literal[
     "low_gate_score",
     "blocked_stopword",
     "proper_noun",
+    "seed_mismatch",
 ]
 
 
@@ -114,6 +147,16 @@ class TokenTrace:
     qdrant_scores: list[float] = field(default_factory=list)
     payload_polarities: list[int] = field(default_factory=list)
     created_span: SpanLabelDto | None = None
+
+
+@dataclass(frozen=True)
+class EmotionTokenCandidate:
+    token: object
+    query_text: str
+    keyword_text: str
+    start_offset: int
+    end_offset: int
+    matched_word: str
 
 
 @dataclass
@@ -287,6 +330,124 @@ class SpanTagger:
             top_k=EMOTION_GATE_TOP_K,
         )
 
+    @staticmethod
+    def _is_predicate_tag(tag: str) -> bool:
+        return tag == "VV" or tag.startswith("VA")
+
+    @classmethod
+    def _is_valid_pos(cls, tag: str) -> bool:
+        return tag in _VALID_POS or cls._is_predicate_tag(tag)
+
+    @staticmethod
+    def _is_semantic_fallback_hit(hit: object) -> bool:
+        payload = getattr(hit, "payload", None) or {}
+        category = str(payload.get("category", "")).strip().upper()
+        return category == "DIRECT_EMOTION"
+
+    @staticmethod
+    def _is_emotion_like_noun(keyword_text: str) -> bool:
+        if any(marker in keyword_text for marker in _SEMANTIC_FALLBACK_NOUN_MARKERS):
+            return True
+        return any(keyword_text.endswith(suffix) for suffix in _SEMANTIC_FALLBACK_NOUN_SUFFIXES)
+
+    @classmethod
+    def _allows_semantic_fallback(cls, candidate: EmotionTokenCandidate) -> bool:
+        tag = str(candidate.token.tag)
+        if tag == "VV":
+            return False
+        if tag.startswith("VA") or tag == "XR":
+            return True
+        if tag == "NNG":
+            return cls._is_emotion_like_noun(candidate.keyword_text)
+        return False
+
+    @classmethod
+    def _semantic_fallback_hits(cls, candidate: EmotionTokenCandidate, hits: list) -> list:
+        if not cls._allows_semantic_fallback(candidate):
+            return []
+        return [
+            hit for hit in hits
+            if (
+                float(getattr(hit, "score", 0.0)) >= _SEMANTIC_FALLBACK_MIN_SCORE
+                and cls._is_semantic_fallback_hit(hit)
+            )
+        ]
+
+    @staticmethod
+    def _predicate_query_text(form: str) -> str:
+        return form if form.endswith("다") else f"{form}다"
+
+    @staticmethod
+    def _expand_to_word_end(text: str, default_end: int) -> int:
+        end = default_end
+        while end < len(text):
+            char = text[end]
+            if char.isspace() or char in _SPAN_BOUNDARY_CHARS:
+                break
+            end += 1
+        return end
+
+    @staticmethod
+    def _is_xr_hada_candidate(tokens: list, token_index: int, token_end: int) -> bool:
+        token = tokens[token_index]
+        if token.tag != "XR":
+            return False
+
+        for next_token in tokens[token_index + 1:]:
+            if next_token.start < token_end:
+                continue
+            if next_token.start > token_end:
+                return False
+            return next_token.tag == "XSA" and next_token.form == "하"
+        return False
+
+    def _build_candidate(
+        self,
+        sentence_text: str,
+        tokens: list,
+        token_index: int,
+    ) -> EmotionTokenCandidate | None:
+        token = tokens[token_index]
+        start_offset = token.start
+        end_offset = token.start + token.len
+        surface = sentence_text[start_offset:end_offset]
+
+        if token.tag == "NNG":
+            return EmotionTokenCandidate(
+                token=token,
+                query_text=surface,
+                keyword_text=surface,
+                start_offset=start_offset,
+                end_offset=end_offset,
+                matched_word=surface,
+            )
+
+        if self._is_predicate_tag(token.tag):
+            keyword_text = self._predicate_query_text(token.form)
+            end_offset = self._expand_to_word_end(sentence_text, end_offset)
+            return EmotionTokenCandidate(
+                token=token,
+                query_text=keyword_text,
+                keyword_text=keyword_text,
+                start_offset=start_offset,
+                end_offset=end_offset,
+                matched_word=sentence_text[start_offset:end_offset],
+            )
+
+        if self._is_xr_hada_candidate(tokens, token_index, end_offset):
+            keyword_text = self._predicate_query_text(f"{token.form}하")
+            end_offset = self._expand_to_word_end(sentence_text, end_offset)
+            return EmotionTokenCandidate(
+                token=token,
+                query_text=keyword_text,
+                keyword_text=keyword_text,
+                start_offset=start_offset,
+                end_offset=end_offset,
+                matched_word=sentence_text[start_offset:end_offset],
+            )
+
+        return None
+
     def tag(
         self,
         sentences: list[ClassifiedSentenceDto],
@@ -356,9 +517,9 @@ class SpanTagger:
     ) -> list[SpanLabelDto]:
         spans: list[SpanLabelDto] = []
 
-        valid_tokens = []
+        valid_candidates: list[EmotionTokenCandidate] = []
         token_traces: list[TokenTrace] = []
-        for t in tokens:
+        for token_index, t in enumerate(tokens):
             surface = sentence.sentence_text[t.start:t.start + t.len]
             trace = TokenTrace(
                 form=t.form,
@@ -369,30 +530,38 @@ class SpanTagger:
             )
             if t.tag in _PROPER_NOUN_POS:
                 trace.reject_reason = "proper_noun"
-            elif t.tag not in _VALID_POS:
+            elif not self._is_valid_pos(t.tag):
                 trace.reject_reason = "invalid_pos"
             elif len(t.form) < 2:
                 trace.reject_reason = "too_short"
             elif is_blocked_emotion_stopword(surface, t.form):
                 trace.reject_reason = "blocked_stopword"
             else:
-                valid_tokens.append(t)
+                candidate = self._build_candidate(
+                    sentence_text=sentence.sentence_text,
+                    tokens=tokens,
+                    token_index=token_index,
+                )
+                if candidate is None:
+                    trace.reject_reason = "invalid_pos"
+                else:
+                    valid_candidates.append(candidate)
             token_traces.append(trace)
 
         if debug and sentence_trace is not None:
             sentence_trace.tokens.extend(token_traces)
 
-        if not valid_tokens:
+        if not valid_candidates:
             return spans
 
-        surfaces = [sentence.sentence_text[t.start:t.start + t.len] for t in valid_tokens]
+        query_texts = [candidate.query_text for candidate in valid_candidates]
 
         if self.ft_model is not None:
-            raw_vecs = [self.ft_model.get_word_vector(s) for s in surfaces]
+            raw_vecs = [self.ft_model.get_word_vector(s) for s in query_texts]
         else:
             resp = httpx.post(
                 f"{self._ft_server_url}/embed",
-                json={"words": surfaces},
+                json={"words": query_texts},
                 timeout=10.0,
             )
             resp.raise_for_status()
@@ -420,15 +589,15 @@ class SpanTagger:
 
         allowed_polarities = self._allowed_polarities(top_labels)
         valid_index = 0
-        for token, result in zip(valid_tokens, batch_results):
+        for candidate, result in zip(valid_candidates, batch_results):
             hits = result.points
             trace = None
             if debug and sentence_trace is not None:
                 while valid_index < len(sentence_trace.tokens):
-                    candidate = sentence_trace.tokens[valid_index]
+                    trace_candidate = sentence_trace.tokens[valid_index]
                     valid_index += 1
-                    if candidate.reject_reason is None:
-                        trace = candidate
+                    if trace_candidate.reject_reason is None:
+                        trace = trace_candidate
                         break
 
             if debug and trace is not None:
@@ -448,7 +617,18 @@ class SpanTagger:
             else:
                 filtered_hits = hits
 
-            filtered_hits = _dedupe_hits_by_clean_seed(filtered_hits)
+            seed_matched_hits = [
+                h for h in filtered_hits
+                if candidate.keyword_text in _hit_match_seeds(h)
+            ]
+            fallback_hits: list = []
+            if not seed_matched_hits:
+                fallback_hits = self._semantic_fallback_hits(candidate, filtered_hits)
+            if filtered_hits and not seed_matched_hits and not fallback_hits:
+                if debug and trace is not None:
+                    trace.reject_reason = "seed_mismatch"
+                continue
+            filtered_hits = _dedupe_hits_by_clean_seed(seed_matched_hits or fallback_hits)
             if not filtered_hits:
                 if debug and trace is not None:
                     if not hits:
@@ -470,14 +650,13 @@ class SpanTagger:
                         trace.reject_reason = "low_margin"
                     continue
 
-            surface = sentence.sentence_text[token.start:token.start + token.len]
             span = SpanLabelDto(
                 content_sentence_id=sentence.content_sentence_id,
-                start_offset=token.start,
-                end_offset=token.start + token.len,
+                start_offset=candidate.start_offset,
+                end_offset=candidate.end_offset,
                 label_type=SentenceLabelType.EMOTIONALLY_LOADED,
                 score=normalize_score(top_hit.score),
-                matched_word=surface,
+                matched_word=candidate.matched_word,
             )
             spans.append(span)
             if debug and trace is not None:

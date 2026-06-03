@@ -104,6 +104,14 @@ def test_skeletonize_knu_entry_drops_generic_predicate_only_skeletons() -> None:
         ("실제로 이루어지다", "실제로 이루어지", "1"),
         ("고름이 나오는", "고름 나오", "-1"),
         ("충분하게", "충분", "1"),
+        ("무언가를 지우다", "지우", "-1"),
+        ("시간이 흐르다", "흐르", "-1"),
+        ("궁금하다", "궁금", "1"),
+        ("일정을 정하다", "정하", "1"),
+        ("똑같다", "똑같", "1"),
+        ("친구", "친구", "1"),
+        ("이야기하다", "이야기", "-1"),
+        ("사업을 추진하다", "추진", "1"),
     ]
 
     for word, root, polarity in cases:
@@ -127,6 +135,38 @@ def test_kote_clean_token_drops_generic_verb_false_positives() -> None:
     assert seed_builder._clean_kote_token("깨진", "깨", "VV") is None
     assert seed_builder._clean_kote_token("나온", "나오", "VV") is None
     assert seed_builder._clean_kote_token("시키", "시키", "VV") is None
+    assert seed_builder._clean_kote_token("지우", "지우", "VV") is None
+    assert seed_builder._clean_kote_token("흐르", "흐르", "VV") is None
+    assert seed_builder._clean_kote_token("궁금", "궁금", "XR") is None
+    assert seed_builder._clean_kote_token("정한", "정한", "NNG") is None
+    assert seed_builder._clean_kote_token("똑같", "똑같", "VA") is None
+    assert seed_builder._clean_kote_token("친구", "친구", "NNG") is None
+    assert seed_builder._clean_kote_token("이야기", "이야기", "NNG") is None
+    assert seed_builder._clean_kote_token("추진", "추진", "NNG") is None
+
+
+def test_kote_clean_token_reads_review_decisions_as_seed_blocklist(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    decisions_path = tmp_path / "emotion_stopword_review_decisions.json"
+    decisions_path.write_text(
+        json.dumps(
+            {
+                "block_confirmed": [{"surface": "알리다"}],
+                "review_promoted_from_added_data": [],
+                "auto_review_blocked": [{"surface": "죄송하다"}],
+                "keep_confirmed": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(seed_builder, "DECISIONS_PATH", decisions_path)
+    monkeypatch.setattr(seed_builder, "_DECISION_BLOCKLIST", None)
+
+    assert seed_builder._clean_kote_token("알리", "알리", "VV") is None
+    assert seed_builder._clean_kote_token("죄송", "죄송", "XR") is None
 
 
 def test_kote_clean_token_uses_clean_seed_payload_text() -> None:
@@ -152,8 +192,16 @@ def test_read_knu_entries_uses_skeletonized_rows(tmp_path: Path, monkeypatch) ->
 
     rows = seed_builder._read_knu_entries()
 
-    assert [row["embed_text"] for row in rows] == ["움츠러들다", "분노"]
-    assert all(row["word"] != "움츠러드는 모양" for row in rows)
+    embed_texts = [row["embed_text"] for row in rows]
+    assert "움츠러들다" in embed_texts
+    assert "움츠러드는 모양" in embed_texts
+    assert "움츠러들 모양" in embed_texts
+    assert "분노" in embed_texts
+    assert "가능성이 있다고" not in embed_texts
+    assert "가능성 있" not in embed_texts
+    surface_rows = [row for row in rows if row["source"] == "knu_surface"]
+    assert surface_rows
+    assert all(row["confidence_tier"] == "BROAD" for row in surface_rows)
 
 
 def test_read_knu_entries_with_rejected_preserves_invalid_rows(tmp_path: Path, monkeypatch) -> None:
@@ -172,10 +220,61 @@ def test_read_knu_entries_with_rejected_preserves_invalid_rows(tmp_path: Path, m
 
     rows, rejected = seed_builder._read_knu_entries_with_rejected()
 
-    assert [row["clean_seed"] for row in rows] == ["분노"]
+    embed_texts = [row["embed_text"] for row in rows]
+    assert "분노" in embed_texts
+    assert "분노할 정도" in embed_texts
+    assert "적합하도록 만들어지다" not in embed_texts
     assert len(rejected) == 1
     assert rejected[0]["original_word"] == "적합하도록 만들어지다"
     assert rejected[0]["is_valid_emotion"] is False
+
+
+def test_knu_surface_seed_rows_use_review_decisions_as_blocklist(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    decisions_path = tmp_path / "emotion_stopword_review_decisions.json"
+    decisions_path.write_text(
+        json.dumps(
+            {
+                "block_confirmed": [{"surface": "물어보다"}],
+                "review_promoted_from_added_data": [],
+                "auto_review_blocked": [],
+                "keep_confirmed": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    knu_path = tmp_path / "SentiWord_info.json"
+    knu_path.write_text(
+        json.dumps(
+            [
+                {"word": "계속 물어보다", "word_root": "물어보", "polarity": "-1"},
+                {"word": "친구", "word_root": "친구", "polarity": "1"},
+                {"word": "이야기하다", "word_root": "이야기", "polarity": "-1"},
+                {"word": "사업을 추진하다", "word_root": "추진", "polarity": "1"},
+                {"word": "불안감", "word_root": "불안감", "polarity": "-1"},
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(seed_builder, "DECISIONS_PATH", decisions_path)
+    monkeypatch.setattr(seed_builder, "KNU_PATH", knu_path)
+    monkeypatch.setattr(seed_builder, "_DECISION_BLOCKLIST", None)
+
+    rows = seed_builder._read_knu_entries()
+
+    embed_texts = {row["embed_text"] for row in rows}
+    assert "계속 물어보다" not in embed_texts
+    assert "물어보" not in embed_texts
+    assert "친구" not in embed_texts
+    assert "이야기하다" not in embed_texts
+    assert "이야기" not in embed_texts
+    assert "사업을 추진하다" not in embed_texts
+    assert "추진" not in embed_texts
+    assert "불안감" in embed_texts
 
 
 def test_merge_entries_preserves_same_seed_with_different_polarity() -> None:

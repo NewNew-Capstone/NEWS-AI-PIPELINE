@@ -6,6 +6,7 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 from kiwipiepy import Kiwi
 
@@ -15,6 +16,7 @@ KNU_PATH = Path("analysis_bc/data/SentiWord_info.json")
 KOTE_RAW_DIR = Path("analysis_bc/data/eval/raw/kote")
 DEFAULT_OUTPUT = Path("analysis_bc/data/eval/processed/kote/emotion_seed_for_qdrant.jsonl")
 DEFAULT_REJECTED_OUTPUT = Path("analysis_bc/data/eval/processed/kote/emotion_seed_rejected_for_review.jsonl")
+DECISIONS_PATH = Path("analysis_bc/tagger/emotion_stopword_review_decisions.json")
 
 _VALID_POS = {"NNG", "VV", "VA", "XR"}
 _KOREAN_RE = re.compile(r"[가-힣]")
@@ -43,6 +45,8 @@ _POSITIVE_LABELS = {
 
 _BLACKLIST = {
     "가량", "주의", "시장", "인사", "경상", "해지",
+    "지우다", "흐르다", "궁금하다", "정한", "정하다", "똑같다",
+    "친구", "이야기", "이야기하다", "추진", "추진하다",
 }
 
 _KOTE_STOPWORDS = {
@@ -62,7 +66,7 @@ _KNU_DESCRIPTOR_NOUNS = {
     "모양", "데", "정도", "사람", "것", "수", "상태", "경우", "느낌", "적",
 }
 _KNU_GENERIC_NOUNS = {
-    "가격", "가능", "가능성",
+    "가격", "가능", "가능성", "친구", "이야기", "추진",
 }
 _KNU_GENERIC_PREDICATES = {
     "가누", "있", "없", "못하", "하", "되",
@@ -74,6 +78,8 @@ _KNU_GENERIC_PREDICATES = {
     "앞서", "살펴보", "보내", "만나", "따르", "드러나", "대하",
     "넘기", "갖추", "가져가", "지내", "올리", "이끌",
     "깨", "시키",
+    "지우", "흐르", "궁금", "궁금하", "정한", "정하", "똑같",
+    "이야기", "추진", "추진하",
 }
 _KNU_EVALUATIVE_NNG_WHITELIST = _EMOTION_NNG_WHITELIST | {
     "가난", "거북",
@@ -81,10 +87,54 @@ _KNU_EVALUATIVE_NNG_WHITELIST = _EMOTION_NNG_WHITELIST | {
 _KNU_ADJECTIVE_NOUNS = {
     "가난", "거북",
 }
+_KNU_RAW_BLACKLIST = {
+    "시장", "인사", "경상", "잘", "해지", "친구", "이야기", "추진",
+}
 _LEXICALIZED_NOUN_VERB_SEEDS = {
     ("짜증", "나"): "짜증나다",
     ("화", "나"): "화나다",
 }
+_DECISION_BLOCKLIST: frozenset[str] | None = None
+
+
+def _surface_from_decision_item(item: Any) -> str | None:
+    if isinstance(item, str):
+        return item.strip() or None
+    if not isinstance(item, dict):
+        return None
+    for key in ("surface", "keyword", "keyword_text"):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _load_review_decision_blocklist(path: Path = DECISIONS_PATH) -> frozenset[str]:
+    if not path.exists():
+        return frozenset()
+    try:
+        raw: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return frozenset()
+
+    words: set[str] = set()
+    for section in (
+        "block_confirmed",
+        "review_promoted_from_added_data",
+        "auto_review_blocked",
+    ):
+        for item in raw.get(section, []):
+            surface = _surface_from_decision_item(item)
+            if surface:
+                words.add(surface)
+    return frozenset(words)
+
+
+def _review_decision_blocklist() -> frozenset[str]:
+    global _DECISION_BLOCKLIST
+    if _DECISION_BLOCKLIST is None:
+        _DECISION_BLOCKLIST = _load_review_decision_blocklist()
+    return _DECISION_BLOCKLIST
 
 
 def _get_kiwi() -> Kiwi:
@@ -108,8 +158,15 @@ def _is_keep_pos(tag: str) -> bool:
 
 def _is_generic_form(form: str) -> bool:
     base = form[:-1] if form.endswith("다") else form
+    predicate = _predicate_seed(base)
+    root = _root_seed(base)
+    decision_blocklist = _review_decision_blocklist()
     return (
-        base in _BLACKLIST
+        form in decision_blocklist
+        or base in decision_blocklist
+        or predicate in decision_blocklist
+        or root in decision_blocklist
+        or base in _BLACKLIST
         or base in _KNU_DESCRIPTOR_NOUNS
         or base in _KNU_GENERIC_NOUNS
         or base in _KNU_GENERIC_PREDICATES
@@ -249,6 +306,75 @@ def _seed_row_from_clean(cleaned: dict, source: str, **extra: object) -> dict:
     }
 
 
+def _is_blocked_seed_text(text: str) -> bool:
+    normalized = text.strip()
+    if not normalized or not _is_korean(normalized):
+        return True
+    decision_blocklist = _review_decision_blocklist()
+    if normalized in decision_blocklist or normalized in _BLACKLIST or normalized in _KNU_RAW_BLACKLIST:
+        return True
+    compact = normalized.replace(" ", "")
+    if any(blocked and blocked.replace(" ", "") in compact for blocked in decision_blocklist):
+        return True
+    for form, _tag in _content_tokens(normalized):
+        if _is_generic_form(form):
+            return True
+    return False
+
+
+def _seed_row_from_knu_surface(
+    row: dict,
+    *,
+    embed_text: str,
+    polarity: int,
+    cleaned: dict | None,
+) -> dict:
+    canonical_seed = None
+    category = "BROAD_KNU"
+    if cleaned and cleaned.get("is_valid_emotion"):
+        canonical_seed = str(cleaned.get("clean_seed") or "")
+        category = str(cleaned.get("category") or category)
+
+    return {
+        "embed_text": embed_text,
+        "word": str(row.get("word", "")).strip(),
+        "word_root": str(row.get("word_root", "")).strip(),
+        "clean_seed": embed_text,
+        "canonical_seed": canonical_seed,
+        "polarity": str(polarity),
+        "source": "knu_surface",
+        "category": category,
+        "confidence_tier": "BROAD",
+        "original_word": str(row.get("word", "")).strip(),
+        "original_word_root": str(row.get("word_root", "")).strip(),
+    }
+
+
+def _surface_seed_rows_from_knu_entry(row: dict, cleaned: dict | None = None) -> list[dict]:
+    polarity = _normalize_polarity(row.get("polarity"))
+    if polarity is None:
+        return []
+
+    rows: list[dict] = []
+    seen: set[str] = set()
+    for key in ("word", "word_root"):
+        text = str(row.get(key, "")).strip()
+        if text in seen:
+            continue
+        seen.add(text)
+        if _is_blocked_seed_text(text):
+            continue
+        rows.append(
+            _seed_row_from_knu_surface(
+                row,
+                embed_text=text,
+                polarity=polarity,
+                cleaned=cleaned,
+            )
+        )
+    return rows
+
+
 def skeletonize_knu_entry(row: dict) -> dict | None:
     cleaned = clean_knu_entry(row)
     if not cleaned["is_valid_emotion"]:
@@ -269,15 +395,24 @@ def _read_knu_entries_with_rejected() -> tuple[list[dict], list[dict]]:
     seen: set[tuple[str, str]] = set()
     for row in rows:
         cleaned = clean_knu_entry(row)
-        if not cleaned["is_valid_emotion"]:
+        if cleaned["is_valid_emotion"]:
+            seed_row = _seed_row_from_clean(cleaned, "knu", score_hint=1.0)
+            key = (seed_row["embed_text"], seed_row["polarity"])
+            if key not in seen:
+                seen.add(key)
+                out.append(seed_row)
+        else:
             rejected.append(cleaned)
-            continue
-        seed_row = _seed_row_from_clean(cleaned, "knu", score_hint=1.0)
-        key = (seed_row["embed_text"], seed_row["polarity"])
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(seed_row)
+
+        for surface_row in _surface_seed_rows_from_knu_entry(
+            row,
+            cleaned if cleaned["is_valid_emotion"] else None,
+        ):
+            key = (surface_row["embed_text"], surface_row["polarity"])
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(surface_row)
     return out, rejected
 
 
