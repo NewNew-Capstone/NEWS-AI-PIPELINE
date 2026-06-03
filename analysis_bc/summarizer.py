@@ -2,18 +2,22 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from pathlib import Path
 
 from anthropic import Anthropic
 from anthropic.types import TextBlock
+from dotenv import load_dotenv
 
 from analysis_bc.classifier import ClassifiedSentenceDto
 from analysis_bc.enums import SentenceLabelType
 from analysis_bc.schemas import SpanLabelDto
 
 logger = logging.getLogger(__name__)
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 _FALLBACK: dict = {
-    "summary_text": "[LLM 안 탐] 영상 요약 생성에 실패했습니다.",
+    "summary_text": "",
     "perspective_summary": "",
     "evidence_summary": "",
     "tone_label": "",
@@ -22,11 +26,17 @@ _FALLBACK: dict = {
 
 class BiasSummarizer:
     def __init__(self) -> None:
-        import os
         key = os.environ.get("ANTHROPIC_API_KEY", "")
-        logger.debug("BiasSummarizer init: key_len=%d prefix=%s", len(key), key[:12])
+        if not key:
+            logger.warning("BiasSummarizer init: ANTHROPIC_API_KEY is empty; LLM summaries will fall back")
+        else:
+            logger.debug("BiasSummarizer init: key_len=%d prefix=%s", len(key), key[:12])
         self.client = Anthropic()  # SDK가 ANTHROPIC_API_KEY 환경변수를 직접 읽음
-        self.model = "claude-haiku-4-5-20251001"  # TODO: 검증 후 claude-sonnet-4-6 으로 교체
+        self.model = (
+            os.environ.get("ANTHROPIC_SUMMARY_MODEL")
+            or os.environ.get("ANTHROPIC_MODEL")
+            or "claude-haiku-4-5-20251001"
+        )
 
     def summarize(
         self,

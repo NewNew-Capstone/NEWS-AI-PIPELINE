@@ -115,7 +115,7 @@ class TestBiasSummarizer:
             language="ko",
         )
         assert result == {
-            "summary_text": "[LLM 안 탐] 영상 요약 생성에 실패했습니다.",
+            "summary_text": "",
             "perspective_summary": "",
             "evidence_summary": "",
             "tone_label": "",
@@ -132,7 +132,7 @@ class TestBiasSummarizer:
             language="ko",
         )
 
-        assert result["summary_text"].startswith("[LLM 안 탐]")
+        assert result["summary_text"] == ""
 
     def test_summarize_empty_sentences(self) -> None:
         summarizer = _make_mock_summarizer()
